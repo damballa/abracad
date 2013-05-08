@@ -1,4 +1,4 @@
-(ns cadavra.core)
+(ns abracad.core)
 
 (defn foo
   "I don't do a whole lot."

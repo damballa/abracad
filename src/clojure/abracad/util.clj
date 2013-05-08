@@ -1,4 +1,4 @@
-(ns cadavra.util)
+(ns abracad.util)
 
 (defmacro returning
   "Evaluates the result of expr, then evaluates the forms in body (presumably

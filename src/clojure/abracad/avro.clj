@@ -1,5 +1,5 @@
-(ns cadavra.avro
-  (:require [cadavra.util :refer [returning]])
+(ns abracad.avro
+  (:require [abracad.util :refer [returning]])
   (:import [org.apache.avro Schema]
            [org.apache.avro.io DatumReader Decoder ResolvingDecoder]))
 

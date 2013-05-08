@@ -1,6 +1,6 @@
-(ns cadavra.core-test
+(ns abracad.core-test
   (:require [clojure.test :refer :all]
-            [cadavra.avro :as avro]
+            [abracad.avro :as avro]
             [cheshire.core :as json]))
 
 
@@ -9,19 +9,19 @@
 (import '[java.io ByteArrayInputStream ByteArrayOutputStream])
 (import '[org.apache.avro Schema Schema$Parser])
 (def schema (->> {:type :record,
-                  :namespace 'cadavra.core-test
+                  :namespace 'abracad.core-test
                   :name 'Example
                   :fields [{:name "foo" :type :string}
                            {:name "bar"
                             :type [:null
                                    {:type :record
-                                    :namespace 'cadavra.core-test
+                                    :namespace 'abracad.core-test
                                     :name 'SubExample
                                     :fields [{:name "baz", :type :long}]}]}]}
                  (json/generate-string)
                  (.parse (Schema$Parser.))))
 (def sub-schema (->> {:type :record
-                      :namespace 'cadavra.core-test
+                      :namespace 'abracad.core-test
                       :name 'SubExample
                       :fields [{:name "baz", :type :long}]}
                      (json/generate-string)
@@ -39,7 +39,7 @@
     (.flush encoder)
     (.close out)
     (.toByteArray out)))
-(import 'cadavra.avro.ClojureDatumReader)
+(import 'abracad.avro.ClojureDatumReader)
 
 (comment
 

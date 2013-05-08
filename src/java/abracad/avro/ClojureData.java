@@ -1,4 +1,4 @@
-package cadavra.avro;
+package abracad.avro;
 
 import org.apache.avro.generic.GenericData;
 

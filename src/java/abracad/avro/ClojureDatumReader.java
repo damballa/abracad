@@ -1,4 +1,4 @@
-package cadavra.avro;
+package abracad.avro;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ import clojure.lang.Var;
 
 public class ClojureDatumReader<T> extends GenericDatumReader<T> {
 
-private static final String NS = "cadavra.avro";
+private static final String NS = "abracad.avro";
 
 static {
     RT.var("clojure.core", "require").invoke(Symbol.intern(NS));
