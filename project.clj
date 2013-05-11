@@ -1,6 +1,6 @@
 (defproject com.damballa/abracad "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "De/serialize Clojure data structures with Avro."
+  :url "http://github.com/damballa/abracad"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :source-paths ["src/clojure"]
