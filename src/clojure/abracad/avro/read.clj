@@ -1,6 +1,6 @@
 (ns abracad.avro.read
   (:require [abracad.avro.util :refer [mangle unmangle field-keyword]]
-            [abracad.avro.mapping :as avrom])
+            [abracad.avro :as avro])
   (:import [org.apache.avro Schema]
            [org.apache.avro.io Decoder ResolvingDecoder]
            [abracad.avro ClojureDatumReader]))
@@ -22,7 +22,7 @@
                         (transient {})
                         (.readFieldOrder in)))
                {:type rname})]
-    (if-let [avro-reader (get avrom/*avro-readers* rname)]
+    (if-let [avro-reader (get avro/*avro-readers* rname)]
       (avro-reader rmap)
       rmap)))
 

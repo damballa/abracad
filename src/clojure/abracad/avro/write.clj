@@ -1,6 +1,6 @@
 (ns abracad.avro.write
   (:require [abracad.avro.util :refer [case-enum mangle unmangle field-keyword]]
-            [abracad.avro.mapping :as avrom])
+            [abracad.avro :as avro])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named]
@@ -27,7 +27,7 @@
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (doseq [f (.getFields schema)
           :let [key (field-keyword f),
-                val (avrom/field-get datum key)]]
+                val (avro/field-get datum key)]]
     (.write writer (.schema f) val out)))
 
 (defn write-enum

@@ -1,8 +1,7 @@
 (ns abracad.core-test
   (:require [clojure.test :refer :all]
             [cheshire.core :as json]
-            [abracad.avro :as avro]
-            [abracad.avro.mapping :as avrom])
+            [abracad.avro :as avro])
   (:import [java.io ByteArrayOutputStream]
            [java.net InetAddress]))
 
@@ -28,7 +27,7 @@
     (.toByteArray out)))
 
 (extend-type InetAddress
-  avrom/FieldLookup
+  avro/FieldLookup
   (field-get [this field]
     (case field
       :address (.getAddress this)))
@@ -39,7 +38,7 @@
 
 (comment
 
-  (binding [avrom/*avro-readers*
+  (binding [avro/*avro-readers*
             {'abracad.core-test/Example #'map->Example
              'abracad.core-test/SubExample #'map->SubExample}]
     (let [record (avro/decode schema example-bytes)]
@@ -56,7 +55,7 @@
                    (InetAddress/getByName "8.8.8.8")
                    (InetAddress/getByName "8::8"))
                 (.toByteArray out))]
-    (binding [avrom/*avro-readers* {'java.net/InetAddress #'map->InetAddress}]
+    (binding [avro/*avro-readers* {'java.net/InetAddress #'map->InetAddress}]
       (doall (avro/decode-seq schema bytes))))
 
   )
