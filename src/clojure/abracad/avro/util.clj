@@ -1,5 +1,12 @@
 (ns abracad.avro.util
+  "Internal utility functions."
+  {:private true}
   (:import [org.apache.avro Schema$Field]))
+
+(defmacro returning
+  "Evaluates the result of expr, then evaluates the forms in body (presumably
+for side-effects), then returns the result of expr."
+  [expr & body] `(let [value# ~expr] ~@body value#))
 
 (defmacro case-enum
   "Like `case`, but explicitly dispatch an Java enums."

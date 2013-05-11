@@ -1,4 +1,6 @@
 (ns abracad.avro.read
+  "Generic data reading implementation."
+  {:private true}
   (:require [abracad.avro.util :refer [mangle unmangle field-keyword]]
             [abracad.avro :as avro])
   (:import [org.apache.avro Schema]

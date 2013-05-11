@@ -6,7 +6,7 @@
            [java.net InetAddress]))
 
 (def schema
-  (avro/schema-parse
+  (avro/parse-schema
    {:type :record,
     :namespace 'abracad.core-test
     :name 'Example
@@ -27,7 +27,8 @@
     (.toByteArray out)))
 
 (extend-type InetAddress
-  avro/FieldLookup
+  avro/AvroSerializable
+  (schema-name [_] "ip.address")
   (field-get [this field]
     (case field
       :address (.getAddress this)))
@@ -38,15 +39,16 @@
 
 (comment
 
+  (avro/decode schema example-bytes)
+
   (binding [avro/*avro-readers*
             {'abracad.core-test/Example #'map->Example
              'abracad.core-test/SubExample #'map->SubExample}]
-    (let [record (avro/decode schema example-bytes)]
-      [record (meta record)]))
+    (avro/decode schema example-bytes))
 
-  (let [schema (avro/schema-parse
+  (let [schema (avro/parse-schema
                 {:type :record
-                 :name 'java.net.InetAddress
+                 :name 'ip.address
                  :fields [{:name :address
                            :type [{:type :fixed, :name "IPv4", :size 4}
                                   {:type :fixed, :name "IPv6", :size 16}]}]})
@@ -55,7 +57,7 @@
                    (InetAddress/getByName "8.8.8.8")
                    (InetAddress/getByName "8::8"))
                 (.toByteArray out))]
-    (binding [avro/*avro-readers* {'java.net/InetAddress #'map->InetAddress}]
+    (binding [avro/*avro-readers* {'ip/address #'map->InetAddress}]
       (doall (avro/decode-seq schema bytes))))
 
   )

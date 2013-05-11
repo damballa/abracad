@@ -1,9 +1,11 @@
 (ns abracad.avro.write
+  "Generic data writing implementation."
+  {:private true}
   (:require [abracad.avro.util :refer [case-enum mangle unmangle field-keyword]]
             [abracad.avro :as avro])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
-           [clojure.lang Named]
+           [clojure.lang Named Sequential IRecord]
            [org.apache.avro Schema Schema$Field Schema$Type]
            [org.apache.avro.io Encoder]
            [abracad.avro ClojureDatumWriter]))
@@ -13,12 +15,6 @@
 
 (defn named?
   [x] (or (symbol? x) (keyword? x) (string? x)))
-
-(defn full-name
-  [x]
-  (let [ns (and (namespaced? x) (-> x namespace mangle))
-        n (-> x name mangle)]
-    (if ns (str ns "." n) n)))
 
 (def ^:const bytes-class
   (Class/forName "[B"))
@@ -34,11 +30,57 @@
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (.writeEnum out (.getEnumOrdinal schema (-> datum name mangle))))
 
-(defn enum-symbol?
+(defn schema-name-type
+  [datum]
+  (let [t (type datum)]
+    (cond (string? t) t
+          (instance? Named t)
+          , (let [ns (some-> t namespace mangle)
+                  n (-> t name mangle)]
+              (if ns (str ns "." n) n))
+          (class? t) (.getName ^Class t))))
+
+(extend-protocol avro/AvroSerializable
+  nil (schema-name [_] "null")
+  CharSequence (schema-name [_] "string")
+  ByteBuffer (schema-name [_] "bytes")
+  Integer (schema-name [_] "int")
+  Long (schema-name [_] "long")
+  Float (schema-name [_] "float")
+  Double (schema-name [_] "double")
+  Boolean (schema-name [_] "boolean")
+  Collection (schema-name [_] "array")
+  Sequential (schema-name [_] "array")
+
+  Map
+  (schema-name [this]
+    (if (-> this keys first string?)
+      "map"
+      (schema-name-type this)))
+  (field-get [this field] (get this field))
+  (field-list [this] (keys this))
+
+  IRecord
+  (schema-name [this] (schema-name-type this))
+  (field-get [this field] (get this field))
+  (field-list [this] (keys this))
+
+  Object
+  (schema-name [this] (schema-name-type this))
+  (field-get [this field] (get this field))
+  (field-list [this] (keys this)))
+
+(defn avro-record?
+  [^Schema schema datum]
+  (and (map? datum)
+       (every? (->> (.getFields schema) (map field-keyword) set)
+               (keys datum))))
+
+(defn avro-enum?
   [^Schema schema datum]
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
-(defn fixed-bytes?
+(defn avro-fixed?
   [^Schema schema datum]
   (and (instance? bytes-class datum)
        (= (.getFixedSize schema) (count datum))))
@@ -46,27 +88,14 @@
 (defn schema-match?
   [^Schema schema datum]
   (case-enum (.getType schema)
-    Schema$Type/RECORD  (and (map? datum) (-> datum keys first keyword?))
-    Schema$Type/ENUM    (enum-symbol? schema datum)
-    Schema$Type/ARRAY   (or (seq? datum) (instance? Collection datum))
-    Schema$Type/MAP     (and (map? datum) (-> datum keys first string?))
-    Schema$Type/UNION   false ;; Recursive resolution?
-    Schema$Type/FIXED   (fixed-bytes? schema datum)
-    Schema$Type/STRING  (instance? CharSequence datum)
-    Schema$Type/BYTES   (instance? ByteBuffer datum)
-    Schema$Type/INT     (instance? Integer datum)
-    Schema$Type/LONG    (instance? Long datum)
-    Schema$Type/FLOAT   (instance? Float datum)
-    Schema$Type/DOUBLE  (instance? Double datum)
-    Schema$Type/BOOLEAN (instance? Boolean datum)
-    Schema$Type/NULL    (nil? datum)))
+    Schema$Type/RECORD  (avro-record? schema datum)
+    Schema$Type/ENUM    (avro-enum? schema datum)
+    Schema$Type/FIXED   (avro-fixed? schema datum)
+    #_ else             false))
 
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]
-  (let [t (type datum)
-        n (cond (nil? t) "null"
-                (named? t) (full-name t)
-                (instance? Class t) (.getName t))]
+  (let [n (avro/schema-name datum)]
     (if-let [index (and n (.getIndexNamed schema n))]
       index
       (->> (vec (.getTypes schema))
