@@ -11,9 +11,9 @@ import clojure.lang.RT;
 import clojure.lang.Symbol;
 import clojure.lang.Var;
 
-public class ClojureDatumReader<T> extends GenericDatumReader<T> {
+public class ClojureDatumReader extends GenericDatumReader<Object> {
 
-private static final String NS = "abracad.avro";
+private static final String NS = "abracad.avro.read";
 
 static {
     RT.var("clojure.core", "require").invoke(Symbol.intern(NS));
@@ -24,26 +24,21 @@ private static final Var readEnum = RT.var(NS, "read-enum");
 private static final Var readArray = RT.var(NS, "read-array");
 private static final Var readMap = RT.var(NS, "read-map");
 private static final Var readFixed = RT.var(NS, "read-fixed");
-private static final Var readBytes = RT.var(NS, "read-fixed");
+private static final Var readBytes = RT.var(NS, "read-bytes");
 
 public
 ClojureDatumReader() {
-    this(null, null, ClojureData.get());
+    super(null, null);
 }
 
 public
 ClojureDatumReader(Schema schema) {
-    this(schema, schema, ClojureData.get());
+    super(schema, schema);
 }
 
 public
 ClojureDatumReader(Schema writer, Schema reader) {
-    this(writer, reader, ClojureData.get());
-}
-
-public
-ClojureDatumReader(Schema writer, Schema reader, ClojureData data) {
-    super(writer, reader, data);
+    super(writer, reader);
 }
 
 @Override

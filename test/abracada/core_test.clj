@@ -1,51 +1,62 @@
 (ns abracad.core-test
   (:require [clojure.test :refer :all]
+            [cheshire.core :as json]
             [abracad.avro :as avro]
-            [cheshire.core :as json]))
+            [abracad.avro.mapping :as avrom])
+  (:import [java.io ByteArrayOutputStream]
+           [java.net InetAddress]))
 
-
-(import '[org.apache.avro.generic
-           GenericDatumWriter GenericDatumReader GenericData$Record])
-(import '[java.io ByteArrayInputStream ByteArrayOutputStream])
-(import '[org.apache.avro Schema Schema$Parser])
-(def schema (->> {:type :record,
-                  :namespace 'abracad.core-test
-                  :name 'Example
-                  :fields [{:name "foo" :type :string}
-                           {:name "bar"
-                            :type [:null
-                                   {:type :record
-                                    :namespace 'abracad.core-test
-                                    :name 'SubExample
-                                    :fields [{:name "baz", :type :long}]}]}]}
-                 (json/generate-string)
-                 (.parse (Schema$Parser.))))
-(def sub-schema (->> {:type :record
-                      :namespace 'abracad.core-test
+(def schema
+  (avro/schema-parse
+   {:type :record,
+    :namespace 'abracad.core-test
+    :name 'Example
+    :fields [{:name "foo-foo" :type :string}
+             {:name "bar"
+              :type [:null
+                     {:type :record
                       :name 'SubExample
-                      :fields [{:name "baz", :type :long}]}
-                     (json/generate-string)
-                     (.parse (Schema$Parser.))))
-(import '[org.apache.avro.io EncoderFactory DecoderFactory])
+                      :fields [{:name "baz", :type :long}]}]}]}))
+
+(defrecord Example [foo-foo bar])
+
+(defrecord SubExample [^long baz])
+
 (def example-bytes
-  (let [writer (GenericDatumWriter. schema),
-        out (ByteArrayOutputStream.),
-        encoder (-> (EncoderFactory/get) (.binaryEncoder out nil))
-        record (doto (GenericData$Record. schema)
-                 (.put "foo" "bar")
-                 (.put "bar" (doto (GenericData$Record. sub-schema)
-                               (.put "baz" 0))))]
-    (.write writer record encoder)
-    (.flush encoder)
-    (.close out)
+  (with-open [out (ByteArrayOutputStream.)]
+    (avro/encode schema out (->Example "bar" (->SubExample 0)))
     (.toByteArray out)))
-(import 'abracad.avro.ClojureDatumReader)
+
+(extend-type InetAddress
+  avrom/FieldLookup
+  (field-get [this field]
+    (case field
+      :address (.getAddress this)))
+  (field-list [this] #{:address}))
+
+(defn map->InetAddress
+  [{:keys [address]}] (InetAddress/getByAddress address))
 
 (comment
 
- (let [reader (ClojureDatumReader. schema),
-       decoder (-> (DecoderFactory/get) (.binaryDecoder example-bytes nil))
-       record (.read reader nil decoder)]
-   [record (meta record)])
+  (binding [avrom/*avro-readers*
+            {'abracad.core-test/Example #'map->Example
+             'abracad.core-test/SubExample #'map->SubExample}]
+    (let [record (avro/decode schema example-bytes)]
+      [record (meta record)]))
 
- )
+  (let [schema (avro/schema-parse
+                {:type :record
+                 :name 'java.net.InetAddress
+                 :fields [{:name :address
+                           :type [{:type :fixed, :name "IPv4", :size 4}
+                                  {:type :fixed, :name "IPv6", :size 16}]}]})
+        bytes (with-open [out (ByteArrayOutputStream.)]
+                (avro/encode schema out
+                   (InetAddress/getByName "8.8.8.8")
+                   (InetAddress/getByName "8::8"))
+                (.toByteArray out))]
+    (binding [avrom/*avro-readers* {'java.net/InetAddress #'map->InetAddress}]
+      (doall (avro/decode-seq schema bytes))))
+
+  )
