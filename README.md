@@ -33,8 +33,8 @@ from existing Avro Schema objects.
 ```
 
 The `parse-schema` function may be passed multiple schemas, in which
-case later schemas may reference types defined in later schemas.  The
-result is the schema generated from the final argument.
+case later schemas may reference types defined in earlier schemas.
+The result is the schema generated from the final argument.
 
 ### Basic de/serialization
 
@@ -74,7 +74,7 @@ the Clojure Reader `*data-readers*` facility to find custom
 deserialization constructor functions.  These may be used to extend
 Avro de/serialization to arbitrary existing types.
 
-``clj
+```clj
 (import 'java.net.InetAddress)
 
 (extend-type InetAddress
@@ -111,13 +111,13 @@ These are the early days.  Still to be done:
   - Kick the tires on the interface.  There may be glaring holes.
   - Write more exhaustive tests, to cover the full range of types.
   - Dynamically generate schema-specific datum reader/writer
-    implementations.  All the speed generating & compiling
+    implementations.  All the speed of generating & compiling
     de/serialization classes from schemas, but with none of the
     ahead-of-time hassle.
   - Hadoop serialization integration.  The Avro datum reader/writer
     implementation used by the Avro Hadoop serialization is not
-    currently configurable, which prevents directly Clojure interop
-    via the custom Datum reader/writers.
+    currently configurable, which prevents direct Clojure interop via
+    the custom Datum reader/writers.
 
 ## License
 
