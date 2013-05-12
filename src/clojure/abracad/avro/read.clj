@@ -3,7 +3,7 @@
   {:private true}
   (:require [abracad.avro.util :refer [mangle unmangle field-keyword]]
             [abracad.avro :as avro])
-  (:import [org.apache.avro Schema]
+  (:import [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]
            [abracad.avro ClojureDatumReader]))
 
@@ -17,7 +17,7 @@
   (let [rname (schema-symbol expected)
         rmap (with-meta
                (persistent!
-                (reduce (fn [m f]
+                (reduce (fn [m ^Schema$Field f]
                           (assoc! m
                                   (field-keyword f)
                                   (.read reader nil (.schema f) in)))

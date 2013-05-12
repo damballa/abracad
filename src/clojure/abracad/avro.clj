@@ -32,6 +32,7 @@
 
 (defn ^:private codec-for
   "Return Avro codec factory for `codec`."
+  {:tag 'org.apache.avro.file.CodecFactory}
   [codec] (if-not (string? codec) codec (CodecFactory/fromString codec)))
 
 (defn ^:private sink-for
@@ -54,7 +55,7 @@ parsed schema from the final source is returned."
     (reduce (fn [_ source]
               (if (instance? Schema source)
                 (returning source
-                  (.addTypes parser {(.getName source) source}))
+                  (.addTypes parser {(.getName ^Schema source) source}))
                 (->> (if (raw-schema? source) source (clj->json source))
                      (.parse parser))))
             nil
