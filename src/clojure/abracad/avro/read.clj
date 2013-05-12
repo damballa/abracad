@@ -64,4 +64,4 @@
 
 (defn read-bytes
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
-  (.readBytes in))
+  (.readBytes in nil))
