@@ -58,10 +58,10 @@ The Avro type deserialization mappings are as follows:
   - Numeric primitives deserialize as their Java counterparts
   - Strings currently always deserialize as Strings
   - Enums deserialize as keywords
-  - Arrays currently always deserialize as vectors
-  - Maps deserialize as maps
-  - Fixed values currently deserialize as primitive byte arrays
-  - Bytes values deserialize as NIO ByteBuffers
+  - Arrays currently always deserialize as persistent vectors
+  - Maps deserialize as persistent maps
+  - Fixed values currently always deserialize as primitive byte arrays
+  - Bytes values currently always deserialize as primitive byte arrays
   - Records deserialize as maps with keyword field names and `:type`
     metadata indicating the Avro schema name
 

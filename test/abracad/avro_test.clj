@@ -69,3 +69,14 @@
         records ["down" :up :down :left 0 :right "left"]
         bytes (apply freeze schema records)]
     (is (= records (avro/decode-seq schema bytes)))))
+
+(deftest test-bytes
+  (let [schema (avro/parse-schema
+                [{:type :fixed, :name "foo", :size 1}, :bytes])
+        records [(byte-array (map byte [1]))
+                 (byte-array (map byte [1 2]))]
+        bytes (apply freeze schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= 6 (alength bytes)))
+    (is (every? (partial instance? (Class/forName "[B")) thawed))
+    (is (= (map seq records) (map seq thawed)))))

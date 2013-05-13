@@ -19,6 +19,7 @@ private static class Vars {
     private static final Var writeRecord = RT.var(NS, "write-record");
     private static final Var writeEnum = RT.var(NS, "write-enum");
     private static final Var resolveUnion = RT.var(NS, "resolve-union");
+    private static final Var writeBytes = RT.var(NS, "write-bytes");
     private static final Var writeFixed = RT.var(NS, "write-fixed");
 
     static {
@@ -63,6 +64,13 @@ resolveUnion(Schema union, Object datum) {
     Object i = Vars.resolveUnion.invoke(this, union, datum);
     if (i == null) throw new UnresolvedUnionException(union, datum);
     return RT.intCast(i);
+}
+
+@Override
+protected void
+writeBytes(Object datum, Encoder out)
+        throws IOException {
+    Vars.writeBytes.invoke(this, datum, out);
 }
 
 @Override

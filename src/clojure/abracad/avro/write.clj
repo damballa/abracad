@@ -6,7 +6,7 @@
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord]
-           [org.apache.avro Schema Schema$Field Schema$Type]
+           [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
            [abracad.avro ClojureDatumWriter]))
 
@@ -18,6 +18,27 @@
 
 (def ^:const bytes-class
   (Class/forName "[B"))
+
+(defprotocol HandleBytes
+  (count-bytes [this])
+  (emit-bytes [this encoder])
+  (emit-fixed [this encoder]))
+
+(extend-type (Class/forName "[B")
+  HandleBytes
+  (count-bytes [^bytes bytes] (alength bytes))
+  (emit-bytes [^bytes bytes ^Encoder encoder]
+    (.writeBytes encoder bytes))
+  (emit-fixed [^bytes bytes ^Encoder encoder]
+    (.writeFixed encoder bytes)))
+
+(extend-type ByteBuffer
+  HandleBytes
+  (count-bytes [^ByteBuffer bytes] (.remaining bytes))
+  (emit-bytes [^ByteBuffer bytes ^Encoder encoder]
+    (.writeBytes encoder bytes))
+  (emit-fixed [^ByteBuffer bytes ^Encoder encoder]
+    (.writeFixed encoder bytes)))
 
 (defn write-record
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
@@ -74,16 +95,21 @@
   [^Schema schema datum]
   (and (map? datum)
        (every? (->> (.getFields schema) (map field-keyword) set)
-               (keys datum))))
+               (avro/field-list datum))))
 
 (defn avro-enum?
   [^Schema schema datum]
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
+(defn avro-bytes?
+  [^Schema schema datum]
+  (or (instance? bytes-class datum)
+      (instance? ByteBuffer datum)))
+
 (defn avro-fixed?
   [^Schema schema datum]
-  (and (instance? bytes-class datum)
-       (= (.getFixedSize schema) (count datum))))
+  (and (avro-bytes? schema datum)
+       (= (.getFixedSize schema) (count-bytes datum))))
 
 (defn schema-match?
   [^Schema schema datum]
@@ -91,6 +117,7 @@
     Schema$Type/RECORD  (avro-record? schema datum)
     Schema$Type/ENUM    (avro-enum? schema datum)
     Schema$Type/FIXED   (avro-fixed? schema datum)
+    Schema$Type/BYTES   (avro-bytes? schema datum)
     #_ else             false))
 
 (defn resolve-union
@@ -104,6 +131,12 @@
                           (reduced i)))
                       nil)))))
 
+(defn write-bytes
+  [^ClojureDatumWriter writer datum ^Encoder out]
+  (emit-bytes datum out))
+
 (defn write-fixed
-  [^ClojureDatumWriter writer ^Schema schema ^bytes datum ^Encoder out]
-  (.writeFixed out datum 0 (.getFixedSize schema)))
+  [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
+  (when (not= (.getFixedSize schema) (count-bytes datum))
+    (throw (AvroTypeException. (str "Not a" schema ": " datum))))
+  (emit-fixed datum out))
