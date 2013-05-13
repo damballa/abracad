@@ -83,8 +83,8 @@ Avro de/serialization to arbitrary existing types.
   (field-get [this field] (case field :address (.getAddress this)))
   (field-list [this] #{:address}))
 
-(defn map->InetAddress
-  [{:keys [address]}] (InetAddress/getByAddress address))
+(defn ->InetAddress
+  [address] (InetAddress/getByAddress address))
 
 (def schema
   (avro/parse-schema
@@ -94,7 +94,7 @@ Avro de/serialization to arbitrary existing types.
               :type [{:type :fixed, :name "IPv4", :size 4}
                      {:type :fixed, :name "IPv6", :size 16}]}]}))
 
-(binding [avro/*avro-readers* {'ip/address #'map->InetAddress}]
+(binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
   (with-open [adf (avro/data-file-writer schema "example.avro")]
     (.append adf (InetAddress/getByName "8.8.8.8"))
     (.append adf (InetAddress/getByName "8::8")))

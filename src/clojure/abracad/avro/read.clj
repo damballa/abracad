@@ -15,18 +15,20 @@
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
   (let [rname (schema-symbol expected)
-        rmap (with-meta
-               (persistent!
-                (reduce (fn [m ^Schema$Field f]
-                          (assoc! m
-                                  (field-keyword f)
-                                  (.read reader nil (.schema f) in)))
-                        (transient {})
-                        (.readFieldOrder in)))
-               {:type rname})]
-    (if-let [avro-reader (get avro/*avro-readers* rname)]
-      (avro-reader rmap)
-      rmap)))
+        readerf (get avro/*avro-readers* rname)
+        [reducef record] (if readerf
+                           [(fn [v ^Schema$Field f]
+                              (conj! v (.read reader nil (.schema f) in)))
+                            (transient [])]
+                           [(fn [m ^Schema$Field f]
+                              (assoc! m
+                                (field-keyword f)
+                                (.read reader nil (.schema f) in)))
+                            (transient {})])
+        record (->> in .readFieldOrder (reduce reducef record) persistent!)]
+    (if readerf
+      (apply readerf record)
+      (with-meta record {:type rname}))))
 
 (defn read-enum
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]

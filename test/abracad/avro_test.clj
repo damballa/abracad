@@ -22,8 +22,8 @@
       :address (.getAddress this)))
   (field-list [this] #{:address}))
 
-(defn map->InetAddress
-  [{:keys [address]}] (InetAddress/getByAddress address))
+(defn ->InetAddress
+  [address] (InetAddress/getByAddress address))
 
 (deftest test-example
   (let [schema (avro/parse-schema
@@ -42,8 +42,8 @@
     (is (= {:foo-foo "bar" :bar {:baz 0}}
            (avro/decode schema bytes)))
     (binding [avro/*avro-readers*
-            {'abracad.core-test/Example #'map->Example
-             'abracad.core-test/SubExample #'map->SubExample}]
+            {'abracad.core-test/Example #'->Example
+             'abracad.core-test/SubExample #'->SubExample}]
       (is (= record (avro/decode schema bytes))))))
 
 (deftest test-customized
@@ -56,7 +56,7 @@
         records [(InetAddress/getByName "8.8.8.8")
                  (InetAddress/getByName "8::8")]
         bytes (apply freeze schema records)]
-    (binding [avro/*avro-readers* {'ip/address #'map->InetAddress}]
+    (binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
       (is (= records (doall (avro/decode-seq schema bytes)))))))
 
 (deftest test-union
