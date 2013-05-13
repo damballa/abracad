@@ -9,7 +9,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.1.0"]
+[com.damballa/abracad "0.2.0"]
 ```
 
 ## Usage
