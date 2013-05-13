@@ -187,8 +187,9 @@ Initializes with merged contents of `avro_readers.clj` resources.
 Whenever an Avro record is deserialized, the Clojure datum reader will
 check this map for a key matching the Avro record name represented as
 a namespace-qualified symbol.  When found, the datum reader will
-invoke the associated value as a function on the map-form deserialized
-record and use the return value as the deserialization result."
+invoke the associated value as a function on the deserialized record's
+fields as positional arguments.  The datum reader will use the return
+value as the deserialization result."
   {})
 
 (defn ^:private avro-reader-urls
