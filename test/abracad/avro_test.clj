@@ -80,3 +80,21 @@
     (is (= 6 (alength bytes)))
     (is (every? (partial instance? (Class/forName "[B")) thawed))
     (is (= (map seq records) (map seq thawed)))))
+
+(deftest test-arrays
+  (let [schema (avro/parse-schema {:type :array, :items :long})
+        records [[] [0 1] (range 1024)]
+        bytes (apply freeze schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))
+
+(deftest test-maps
+  (let [schema (avro/parse-schema {:type :map, :values :long})
+        records [{}
+                 {"foo" 0, "bar" 1}
+                 (->> (range 1024)
+                      (map #(-> [(str %) %]))
+                      (into {}))]
+        bytes (apply freeze schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))

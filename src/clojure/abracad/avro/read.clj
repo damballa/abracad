@@ -39,10 +39,10 @@
       []
       (persistent!
        (loop [m (transient []), n (long n)]
-         (if-not (pos? n)
-           (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
-           (let [v (.read reader nil vtype in)]
-             (recur (conj! m v) (dec n)))))))))
+         (let [m (conj! m (.read reader nil vtype in)), n (dec n)]
+           (if-not (pos? n)
+             (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
+             (recur m n))))))))
 
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
@@ -51,10 +51,11 @@
       {}
       (persistent!
        (loop [m (transient {}), n (long n)]
-         (if-not (pos? n)
-           (let [n (.mapNext in)] (if-not (pos? n) m (recur m n)))
-           (let [k (.readString in), v (.read reader nil vtype in)]
-             (recur (assoc! m k v) (dec n)))))))))
+         (let [k (.readString in), v (.read reader nil vtype in)
+               m (assoc! m k v), n (dec n)]
+           (if-not (pos? n)
+             (let [n (.mapNext in)] (if-not (pos? n) m (recur m n)))
+             (recur m n))))))))
 
 (defn read-fixed
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
