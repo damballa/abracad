@@ -13,18 +13,23 @@
              Encoder EncoderFactory]
            [abracad.avro ClojureDatumReader ClojureDatumWriter]))
 
+(defn ^:private named?
+  "True iff `x` is something which may be provided as an argument to `name`."
+  [x] (or (string? x) (instance? Named x)))
+
 (defn ^:private mangle-value
   "Mange the value of key `k` in map `m`."
-  [m k] (if-not (contains? m k) m (assoc m k (-> m k name mangle))))
+  [m k] (let [x (m k)] (if-not (named? x) m (assoc m k (-> x name mangle)))))
 
 (defn ^:private schema-mangle
-  "If `form` is a map, mangle the values of the `:name` and
-`:namespace` keys."
+  "If `form` is a map, mangle the values of the `:name`, `:namespace`,
+and `:type` keys."
   [form]
   (if-not (map? form)
     form
     (-> (mangle-value form :name)
-        (mangle-value ,,,, :namespace))))
+        (mangle-value ,,,, :namespace)
+        (mangle-value ,,,, :type))))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."
