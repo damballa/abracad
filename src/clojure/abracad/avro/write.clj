@@ -118,10 +118,14 @@
     Schema$Type/ENUM    (avro-enum? schema datum)
     Schema$Type/FIXED   (avro-fixed? schema datum)
     Schema$Type/BYTES   (avro-bytes? schema datum)
+    Schema$Type/LONG    (integer? datum)
+    Schema$Type/INT     (integer? datum)
+    Schema$Type/FLOAT   (float? datum)
+    Schema$Type/DOUBLE  (float? datum)
     #_ else             false))
 
-(defn resolve-union
-  [^ClojureDatumWriter writer ^Schema schema ^Object datum]
+(defn resolve-union*
+  [^Schema schema ^Object datum]
   (let [n (avro/schema-name datum)]
     (if-let [index (and n (.getIndexNamed schema n))]
       index
@@ -130,6 +134,10 @@
                         (when (schema-match? schema datum)
                           (reduced i)))
                       nil)))))
+
+(defn resolve-union
+  [^ClojureDatumWriter writer ^Schema schema ^Object datum]
+  (resolve-union* schema datum))
 
 (defn write-bytes
   [^ClojureDatumWriter writer datum ^Encoder out]
