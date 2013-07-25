@@ -60,7 +60,7 @@ parsed schema from the final source is returned."
     (reduce (fn [_ source]
               (if (instance? Schema source)
                 (returning source
-                  (.addTypes parser {(.getName ^Schema source) source}))
+                  (.addTypes parser {(.getFullName ^Schema source) source}))
                 (->> (if (raw-schema? source) source (clj->json source))
                      (.parse parser))))
             nil
