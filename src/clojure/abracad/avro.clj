@@ -4,7 +4,7 @@
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
             [abracad.avro.util :refer [returning mangle unmangle]])
-  (:import [java.io InputStream EOFException]
+  (:import [java.io ByteArrayOutputStream InputStream EOFException]
            [clojure.lang Named]
            [org.apache.avro Schema Schema$Parser]
            [org.apache.avro.file CodecFactory DataFileWriter DataFileReader]
@@ -173,6 +173,14 @@ a (binary-encoding) Encoder may be opened."
     (doseq [record records]
       (.write ^DatumWriter writer record ^Encoder encoder))
     (.flush encoder)))
+
+(defn binary-encoded
+  "Return bytes produced by binary-encoding `records` with `schema`
+via `encode`."
+  [schema & records]
+  (with-open [out (ByteArrayOutputStream.)]
+    (apply encode schema out records)
+    (.toByteArray out)))
 
 (defprotocol AvroSerializable
   "Protocol for customizing Avro serialization."
