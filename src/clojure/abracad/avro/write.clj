@@ -1,14 +1,38 @@
 (ns abracad.avro.write
   "Generic data writing implementation."
   {:private true}
-  (:require [abracad.avro.util :refer [case-enum mangle unmangle field-keyword]]
-            [abracad.avro :as avro])
+  (:require [abracad.avro :as avro]
+            [abracad.avro.edn :as edn]
+            [abracad.avro.util :refer [case-expr case-enum mangle unmangle
+                                       field-keyword]])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
            [abracad.avro ClojureDatumWriter]))
+
+(def ^:const edn-element
+  "abracad.avro.edn.Element")
+
+(def ^:const edn-meta
+  "abracad.avro.edn.Meta")
+
+(defn element-schema?
+  [^Schema schema]
+  (= edn-element (.getFullName schema)))
+
+(defn meta-schema?
+  [^Schema schema]
+  (= edn-meta (.getFullName schema)))
+
+(defn element-union?
+  [^Schema schema]
+  (= edn-meta (-> schema .getTypes first .getFullName)))
+
+(defn edn-schema?
+  [^Schema schema]
+  (= "abracad.avro.edn" (.getNamespace schema)))
 
 (defn namespaced?
   [x] (instance? Named x))
@@ -40,12 +64,24 @@
   (emit-fixed [^ByteBuffer bytes ^Encoder encoder]
     (.writeFixed encoder bytes)))
 
+(defn elide
+  [^Schema schema]
+  (.schema (first (.getFields schema))))
+
 (defn write-record
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
-  (doseq [f (.getFields schema)
-          :let [key (field-keyword f),
-                val (avro/field-get datum key)]]
-    (.write writer (.schema f) val out)))
+  (case-expr (.getFullName schema)
+    edn-element (.write writer (elide schema) datum out)
+    edn-meta (let [schema (elide schema)]
+               (.write writer schema (with-meta datum nil) out)
+               (.write writer schema (meta datum) out))
+    #_else (doseq [:let [field-get (if (edn-schema? schema)
+                                     edn/field-get
+                                     avro/field-get)]
+                   f (.getFields schema)
+                   :let [key (field-keyword f),
+                         val (field-get datum key)]]
+             (.write writer (.schema f) val out))))
 
 (defn write-enum
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
@@ -75,7 +111,7 @@
 
   Map
   (schema-name [this]
-    (if (-> this keys first string?)
+    (if (->> this keys (every? string?))
       "map"
       (schema-name-type this)))
   (field-get [this field] (get this field))
@@ -120,13 +156,15 @@
     Schema$Type/BYTES   (avro-bytes? schema datum)
     Schema$Type/LONG    (integer? datum)
     Schema$Type/INT     (integer? datum)
-    Schema$Type/FLOAT   (float? datum)
     Schema$Type/DOUBLE  (float? datum)
+    Schema$Type/FLOAT   (float? datum)
     #_ else             false))
 
 (defn resolve-union*
   [^Schema schema ^Object datum]
-  (let [n (avro/schema-name datum)]
+  (let [n (if (element-union? schema)
+            (edn/schema-name datum)
+            (avro/schema-name datum))]
     (if-let [index (and n (.getIndexNamed schema n))]
       index
       (->> (vec (.getTypes schema))
