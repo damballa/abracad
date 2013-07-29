@@ -148,4 +148,5 @@ These are the early days.  Still to be done:
 
 Copyright © 2013 Damballa Inc.
 
-Distributed under the Eclipse Public License, the same as Clojure.
+Distributed under your choice of the Eclipse Public License or the
+Apache License, Version 2.0.
