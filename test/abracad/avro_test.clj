@@ -4,12 +4,6 @@
   (:import [java.io ByteArrayOutputStream]
            [java.net InetAddress]))
 
-(defn freeze
-  [schema & records]
-  (with-open [out (ByteArrayOutputStream.)]
-    (apply avro/encode schema out records)
-    (.toByteArray out)))
-
 (defrecord Example [foo-foo bar])
 
 (defrecord SubExample [^long baz])
@@ -38,7 +32,7 @@
                                    :fields [{:name "baz",
                                              :type :long}]}]}]})
         record (->Example "bar" (->SubExample 0))
-        bytes (freeze schema record)]
+        bytes (avro/binary-encoded schema record)]
     (is (= {:foo-foo "bar" :bar {:baz 0}}
            (avro/decode schema bytes)))
     (binding [avro/*avro-readers*
@@ -55,7 +49,7 @@
                                   {:type :fixed, :name "IPv6", :size 16}]}]})
         records [(InetAddress/getByName "8.8.8.8")
                  (InetAddress/getByName "8::8")]
-        bytes (apply freeze schema records)]
+        bytes (apply avro/binary-encoded schema records)]
     (binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
       (is (= records (doall (avro/decode-seq schema bytes)))))))
 
@@ -67,7 +61,7 @@
                 vertical horizontal
                 [:null :long :string "vertical" "horizontal"])
         records ["down" :up :down :left 0 :right "left"]
-        bytes (apply freeze schema records)]
+        bytes (apply avro/binary-encoded schema records)]
     (is (= records (avro/decode-seq schema bytes)))))
 
 (deftest test-bytes
@@ -75,7 +69,7 @@
                 [{:type :fixed, :name "foo", :size 1}, :bytes])
         records [(byte-array (map byte [1]))
                  (byte-array (map byte [1 2]))]
-        bytes (apply freeze schema records)
+        bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= 6 (alength bytes)))
     (is (every? (partial instance? (Class/forName "[B")) thawed))
@@ -84,7 +78,7 @@
 (deftest test-arrays
   (let [schema (avro/parse-schema {:type :array, :items :long})
         records [[] [0 1] (range 1024)]
-        bytes (apply freeze schema records)
+        bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))
 
@@ -95,6 +89,6 @@
                  (->> (range 1024)
                       (map #(-> [(str %) %]))
                       (into {}))]
-        bytes (apply freeze schema records)
+        bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))

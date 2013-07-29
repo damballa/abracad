@@ -8,6 +8,18 @@
 for side-effects), then returns the result of expr."
   [expr & body] `(let [value# ~expr] ~@body value#))
 
+(defmacro case-expr
+  "Like case, but only supports individual test expressions, which are
+evaluated at macro-expansion time."
+  [e & clauses]
+  `(case ~e
+     ~@(concat
+        (mapcat (fn [[test result]]
+                  [(eval `(let [test# ~test] test#)) result])
+                (partition 2 clauses))
+        (when (odd? (count clauses))
+          (list (last clauses))))))
+
 (defmacro case-enum
   "Like `case`, but explicitly dispatch an Java enums."
   [e & clauses]
