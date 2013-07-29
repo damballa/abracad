@@ -224,7 +224,7 @@
    ])
 
 (defn new-schema
-  "Return new Avro-in-EDN schema.  If provided, incorporate
+  "Return new EDN-in-Avro schema.  If provided, incorporate
 `schemas` (which should be compatible with `avro/parse-schema`) as
 additional allowed element types."
   ([] (new-schema nil))

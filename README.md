@@ -3,13 +3,18 @@
 Abracad is a Clojure library for de/serializing Clojure data
 structures with Avro, leveraging the Java Avro implementation.
 
+Abracad supports: a generic mapping between Avro and Clojure data for
+arbitrary schemas; customized protocol-based mappings between Avro
+records and any JVM types; and “schema-less” EDN-in-Avro serialization
+of arbitrary Clojure data.
+
 ## Installation
 
 Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.2.0"]
+[com.damballa/abracad "0.3.0"]
 ```
 
 ## Usage
@@ -102,6 +107,26 @@ Avro de/serialization to arbitrary existing types.
   (with-open [adf (avro/data-file-reader "example.avro")]
     (doall (seq adf))))
 ;;=> (#<Inet4Address /8.8.8.8> #<Inet6Address /8:0:0:0:0:0:0:8>)
+```
+
+### EDN-in-Avro
+
+Abracad supports expressing EDN data structures as Avro records in the
+`abracad.avro.edn` Avro namespace.  The `new-schema` function in the
+same-named Clojure namespace returns schemas which express a superset
+of EDN capturing most commonly-used Clojure constructs.  These allow
+using Avro for Clojure data without pre-defining application-specific
+schemas.
+
+```clj
+(require '[abracad.avro.edn :as aedn])
+
+(def schema (aedn/new-schema))
+
+(->> {:foo ['bar "baz" 1337]}
+     (avro/binary-encoded schema)
+     (avro/decode schema))
+;;=> {:foo [bar "baz" 1337]}
 ```
 
 ## TODO
