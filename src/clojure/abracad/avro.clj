@@ -104,21 +104,26 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
   {:tag 'org.apache.avro.io.Decoder}
   [schema source] (decoder-factory jsonDecoder schema source))
 
+(defn ^:private coerce
+  "Coerce `x` to be of class `c` by applying `f` to it iff `x` isn't
+already an instance of `c`."
+  [c f x] (if (instance? c x) x (f x)))
+
 (defn decode
   "Decode and return one object from `source` using `schema`.  The
 `source` may be an existing Decoder object or anything on which
 a (binary-encoding) Decoder may be opened."
   [schema source]
-  (let [reader (if (instance? DatumReader schema) schema (datum-reader schema))
-        decoder (if (instance? Decoder source) source (binary-decoder source))]
+  (let [reader (coerce DatumReader datum-reader schema)
+        decoder (coerce Decoder binary-decoder source)]
     (.read ^DatumReader reader nil ^Decoder decoder)))
 
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
   [schema source]
-  (let [reader (if (instance? DatumReader schema) schema (datum-reader schema))
-        decoder (if (instance? Decoder source) source (binary-decoder source))]
+  (let [reader (coerce DatumReader datum-reader schema)
+        decoder (coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
         (try
@@ -168,10 +173,10 @@ decoded serially from `source`."
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
   [schema sink & records]
-  (let [writer (if (instance? DatumWriter schema) schema (datum-writer schema))
-        encoder (if (instance? Encoder sink) sink (binary-encoder sink))]
+  (let [^DatumWriter writer (coerce DatumWriter datum-writer schema)
+        ^Encoder encoder (coerce Encoder binary-encoder sink)]
     (doseq [record records]
-      (.write ^DatumWriter writer record ^Encoder encoder))
+      (.write writer record encoder))
     (.flush encoder)))
 
 (defn binary-encoded

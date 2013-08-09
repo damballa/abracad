@@ -144,7 +144,7 @@
 
 (defn ^:private bigdecimal
   "BigDecimal constructor function matching EDN-in-Avro serialization."
-  [value scale] (BigDecimal. value scale))
+  [^BigInteger value ^long scale] (BigDecimal. value (int scale)))
 
 (defn ^:private queue*
   "Queue from values in `args`."

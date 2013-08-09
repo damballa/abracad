@@ -28,7 +28,8 @@
 
 (defn element-union?
   [^Schema schema]
-  (= edn-meta (-> schema .getTypes first .getFullName)))
+  (let [^Schema schema (-> schema .getTypes first)]
+    (= edn-meta (.getFullName schema))))
 
 (defn edn-schema?
   [^Schema schema]
@@ -50,11 +51,11 @@
 
 (extend-type (Class/forName "[B")
   HandleBytes
-  (count-bytes [^bytes bytes] (alength bytes))
-  (emit-bytes [^bytes bytes ^Encoder encoder]
-    (.writeBytes encoder bytes))
-  (emit-fixed [^bytes bytes ^Encoder encoder]
-    (.writeFixed encoder bytes)))
+  (count-bytes [bytes] (alength ^bytes bytes))
+  (emit-bytes [bytes encoder]
+    (.writeBytes ^Encoder encoder ^bytes bytes))
+  (emit-fixed [bytes encoder]
+    (.writeFixed ^Encoder encoder ^bytes bytes)))
 
 (extend-type ByteBuffer
   HandleBytes
@@ -66,7 +67,7 @@
 
 (defn elide
   [^Schema schema]
-  (.schema (first (.getFields schema))))
+  (.schema ^Schema$Field (first (.getFields schema))))
 
 (defn write-record
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
@@ -78,7 +79,7 @@
     #_else (doseq [:let [field-get (if (edn-schema? schema)
                                      edn/field-get
                                      avro/field-get)]
-                   f (.getFields schema)
+                   ^Schema$Field f (.getFields schema)
                    :let [key (field-keyword f),
                          val (field-get datum key)]]
              (.write writer (.schema f) val out))))

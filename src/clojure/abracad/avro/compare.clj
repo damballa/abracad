@@ -12,14 +12,14 @@
 (declare compare)
 
 (defn order-ignore?
-  [f] (identical? (.order f) Schema$Field$Order/IGNORE))
+  [^Schema$Field f] (identical? (.order f) Schema$Field$Order/IGNORE))
 
 (defn order-ascending?
-  [f] (identical? (.order f) Schema$Field$Order/ASCENDING))
+  [^Schema$Field f] (identical? (.order f) Schema$Field$Order/ASCENDING))
 
 (defn compare-record
   ^long [x y ^Schema schema]
-  (reduce (fn [_ f]
+  (reduce (fn [_ ^Schema$Field f]
             (if (order-ignore? f)
               0
               (let [schema (.schema f), name (keyword (.name f))
