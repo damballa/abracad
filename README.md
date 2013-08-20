@@ -134,7 +134,7 @@ schemas.
 Avro 1.7.5 and later supports configurable “data models” for datum
 reading, writing, and comparison in Hadoop MapReduce jobs.  Abracad
 0.4.0 and later provides a `ClojureData` class which can be passed to
-`AvroJob/setDataModelClass` static method in order to map job Avro
+the `AvroJob/setDataModelClass` static method in order to map job Avro
 input and output directly to and from Clojure data structures.
 
 ## TODO
