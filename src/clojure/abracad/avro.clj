@@ -29,7 +29,8 @@ and `:type` keys."
     form
     (-> (mangle-value form :name)
         (mangle-value ,,,, :namespace)
-        (mangle-value ,,,, :type))))
+        (mangle-value ,,,, :type)
+        (mangle-value ,,,, :items))))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."
