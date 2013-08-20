@@ -14,7 +14,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.3.0"]
+[com.damballa/abracad "0.4.0"]
 ```
 
 ## Usage
@@ -129,6 +129,14 @@ schemas.
 ;;=> {:foo [bar "baz" 1337]}
 ```
 
+### Hadoop MapReduce integration
+
+Avro 1.7.5 and later supports configurable “data models” for datum
+reading, writing, and comparison in Hadoop MapReduce jobs.  Abracad
+0.4.0 and later provides a `ClojureData` class which can be passed to
+`AvroJob/setDataModelClass` static method in order to map job Avro
+input and output directly to and from Clojure data structures.
+
 ## TODO
 
 These are the early days.  Still to be done:
@@ -139,10 +147,6 @@ These are the early days.  Still to be done:
     implementations.  All the speed of generating & compiling
     de/serialization classes from schemas, but with none of the
     ahead-of-time hassle.
-  - Hadoop serialization integration.  The Avro datum reader/writer
-    implementation used by the Avro Hadoop serialization is not
-    currently configurable, which prevents direct Clojure interop via
-    the custom Datum reader/writers.
 
 ## License
 
