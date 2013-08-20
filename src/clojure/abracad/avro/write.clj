@@ -10,6 +10,7 @@
            [clojure.lang Named Sequential IRecord]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
+           [org.apache.avro.generic GenericRecord]
            [abracad.avro ClojureDatumWriter]))
 
 (def ^:const edn-element
@@ -98,6 +99,9 @@
               (if ns (str ns "." n) n))
           (class? t) (.getName ^Class t))))
 
+(defn field-name
+  [^Schema$Field field] (keyword (.name field)))
+
 (extend-protocol avro/AvroSerializable
   nil (schema-name [_] "null")
   CharSequence (schema-name [_] "string")
@@ -122,6 +126,11 @@
   (schema-name [this] (schema-name-type this))
   (field-get [this field] (get this field))
   (field-list [this] (keys this))
+
+  GenericRecord
+  (schema-name [this] (-> this .getSchema .getFullName))
+  (field-get [this field] (.get this (name field)))
+  (filed-list [this] (->> this .getSchema .getFields (map field-name) set))
 
   Object
   (schema-name [this] (schema-name-type this))
