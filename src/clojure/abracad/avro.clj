@@ -6,7 +6,7 @@
             [abracad.avro.util :refer [returning mangle unmangle]])
   (:import [java.io ByteArrayOutputStream InputStream EOFException]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser]
+           [org.apache.avro Schema Schema$Parser Schema$Type]
            [org.apache.avro.file CodecFactory DataFileWriter DataFileReader]
            [org.apache.avro.io
              DatumReader DatumWriter Decoder DecoderFactory
@@ -49,6 +49,12 @@ and `:type` keys."
   "True if schema `source` should be parsed as-is."
   [source] (or (string? source) (instance? InputStream source)))
 
+(def ^:private primitive-types
+  (->> Schema$Type .getEnumConstants (map #(.getName %)) (into #{})))
+
+(defn ^:private named-schema?
+  [^Schema schema] (-> schema .getFullName primitive-types not))
+
 (defn parse-schema
   "Parse Avro schemas in `sources`.  Each schema source may be a JSON
 string, an input stream containing a JSON schema, a Clojure data
@@ -61,7 +67,8 @@ parsed schema from the final source is returned."
     (reduce (fn [_ source]
               (if (instance? Schema source)
                 (returning source
-                  (.addTypes parser {(.getFullName ^Schema source) source}))
+                  (when (named-schema? source)
+                    (.addTypes parser {(.getFullName ^Schema source) source})))
                 (->> (if (raw-schema? source) source (clj->json source))
                      (.parse parser))))
             nil
