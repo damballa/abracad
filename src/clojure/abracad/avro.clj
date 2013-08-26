@@ -196,6 +196,14 @@ via `encode`."
     (apply encode schema out records)
     (.toByteArray out)))
 
+(defn json-encoded
+  "Return string produced by JSON-encoding `records` with `schema`
+via `encode`."
+  [schema & records]
+  (with-open [out (ByteArrayOutputStream.)]
+    (apply encode schema (json-encoder schema out) records)
+    (String. (.toByteArray out))))
+
 (defn compare
   "Compare `x` and `y` according to `schema`."
   [schema x y] (.compare (ClojureData/get) x y ^Schema schema))
