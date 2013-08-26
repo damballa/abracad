@@ -1,5 +1,6 @@
 (ns abracad.avro
   "Functions for de/serializing data with Avro."
+  (:refer-clojure :exclude [compare])
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
@@ -11,7 +12,7 @@
            [org.apache.avro.io
              DatumReader DatumWriter Decoder DecoderFactory
              Encoder EncoderFactory]
-           [abracad.avro ClojureDatumReader ClojureDatumWriter]))
+           [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
 
 (defn ^:private named?
   "True iff `x` is something which may be provided as an argument to `name`."
@@ -194,6 +195,10 @@ via `encode`."
   (with-open [out (ByteArrayOutputStream.)]
     (apply encode schema out records)
     (.toByteArray out)))
+
+(defn compare
+  "Compare `x` and `y` according to `schema`."
+  [schema x y] (.compare (ClojureData/get) x y ^Schema schema))
 
 (defprotocol AvroSerializable
   "Protocol for customizing Avro serialization."
