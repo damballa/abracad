@@ -71,7 +71,7 @@
                  (byte-array (map byte [1 2]))]
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
-    (is (= 6 (alength bytes)))
+    (is (= 6 (alength ^bytes bytes)))
     (is (every? (partial instance? (Class/forName "[B")) thawed))
     (is (= (map seq records) (map seq thawed)))))
 
@@ -89,6 +89,29 @@
                  (->> (range 1024)
                       (map #(-> [(str %) %]))
                       (into {}))]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))
+
+(deftest test-extra
+  (let [schema (avro/parse-schema
+                {:name "Example", :type "record",
+                 :fields [{:name "foo", :type "long"}]})
+        record {:foo 0, :bar 1}]
+    (is (thrown? clojure.lang.ExceptionInfo
+          (avro/binary-encoded schema record)))
+    (is (= {:foo 0}
+           (->> (vary-meta record assoc :type 'Example)
+                (avro/binary-encoded schema)
+                (avro/decode schema))))))
+
+(deftest test-positional
+  (let [schema (avro/parse-schema
+                {:name "Example", :type "record",
+                 :abracad.reader "vector",
+                 :fields [{:name "left", :type "long"}
+                          {:name "right", :type "string"}]})
+        records [[0 "foo"] [1 "bar"] [2 "baz"]]
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))

@@ -12,10 +12,19 @@
   (let [ns (.getNamespace schema), n (-> schema .getName unmangle)]
     (if ns (symbol (unmangle ns) n) (symbol n))))
 
+(defn reader-fn
+  [^Schema schema rname]
+  (or (get avro/*avro-readers* rname)
+      (if-let [reader (.getProp schema "abracad.reader")]
+        (case reader
+          nil      nil
+          "vector" vector
+          #_else   (-> reader symbol resolve)))))
+
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
   (let [rname (schema-symbol expected)
-        readerf (get avro/*avro-readers* rname)
+        readerf (reader-fn expected rname)
         [reducef record] (if readerf
                            [(fn [v ^Schema$Field f]
                               (conj! v (.read reader nil (.schema f) in)))
