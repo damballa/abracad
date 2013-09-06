@@ -78,6 +78,15 @@
             :let [key (field-keyword f), val (field-get datum key)]]
       (.write writer (.schema f) val out))))
 
+(defn wr-named-checked
+  [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
+  (let [fields (into #{} (map field-keyword (.getFields schema)))]
+    (when (not-every? fields (avro/field-list datum))
+      (schema-error! schema datum))
+    (doseq [^Schema$Field f (.getFields schema)
+            :let [key (field-keyword f), val (avro/field-get datum key)]]
+      (.write writer (.schema f) val out))))
+
 (defn wr-positional
   [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
   (let [fields (.getFields schema), nfields (count fields)]
@@ -106,7 +115,7 @@
                (.write writer schema (meta datum) out))
     #_else (let [wrf (cond (schema-equal? schema datum) wr-named
                            (instance? Indexed datum) wr-positional
-                           :else wr-named)]
+                           :else wr-named-checked)]
              (wrf writer schema datum out))))
 
 (defn write-enum
