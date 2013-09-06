@@ -95,12 +95,11 @@
 
 (deftest test-positional
   (let [schema (avro/parse-schema
-                {:name "Example" :type "record"
+                {:name "Example", :type "record",
+                 :abracad.reader "vector",
                  :fields [{:name "left", :type "long"}
                           {:name "right", :type "string"}]})
-        records [[0 "foo"] [1 "bar"] [2 "baz"]]]
-    (is (= [{:left 0, :right "foo"},
-            {:left 1, :right "bar"},
-            {:left 2, :right "baz"}]
-           (->> (apply avro/binary-encoded schema records)
-                (avro/decode-seq schema))))))
+        records [[0 "foo"] [1 "bar"] [2 "baz"]]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))
