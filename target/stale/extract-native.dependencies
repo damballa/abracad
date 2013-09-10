@@ -1,1 +1,0 @@
-([:dependencies ([codox/codox.core "0.6.4"] [org.clojure/clojure "1.5.1"] [org.apache.avro/avro "1.7.5"] [cheshire/cheshire "5.2.0"] [alembic/alembic "0.2.0"])])

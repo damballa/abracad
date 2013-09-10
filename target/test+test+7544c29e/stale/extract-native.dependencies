@@ -1,1 +1,0 @@
-([:dependencies ([org.clojure/clojure "1.5.1"] [org.apache.avro/avro "1.7.5"] [cheshire/cheshire "5.2.0"] [org.clojure/tools.nrepl "0.2.3"] [clojure-complete/clojure-complete "0.2.3"] [alembic/alembic "0.2.0"])])
