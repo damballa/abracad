@@ -78,7 +78,7 @@ and `:type` keys."
 string, an input stream containing a JSON schema, a Clojure data
 structure which may be converted to a JSON schema, or an
 already-parsed Avro schema object.  The schema for each subsequent
-source may represent the types defined in the previous schemas.  The
+source may refer to the types defined in the previous schemas.  The
 parsed schema from the final source is returned."
   [& sources]
   (let [parser (Schema$Parser.)]

@@ -10,4 +10,6 @@
   :java-source-paths ["src/java"]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.apache.avro/avro "1.7.5"]
-                 [cheshire/cheshire "5.2.0"]])
+                 [cheshire/cheshire "5.2.0"]]
+  :plugins [[codox/codox "0.6.4"]]
+  :codox {:include [abracad.avro]})

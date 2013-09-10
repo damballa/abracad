@@ -19,6 +19,12 @@ Leiningen `project.clj`:
 
 ## Usage
 
+Example usage follows; [detailed API documentation][api] available,
+generated via [codox][codox].
+
+[api]: http://damballa.github.com/abracad/
+[codox]: https://github.com/weavejester/codox
+
 ### Schemas
 
 Avro schemas may be parsed from JSON (from either strings or input
