@@ -22,7 +22,7 @@ Leiningen `project.clj`:
 Example usage follows; [detailed API documentation][api] available,
 generated via [codox][codox].
 
-[api]: http://damballa.github.com/abracad/
+[api]: http://damballa.github.io/abracad/
 [codox]: https://github.com/weavejester/codox
 
 ### Schemas
