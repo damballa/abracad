@@ -5,10 +5,13 @@
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
             [abracad.avro.util :refer [returning mangle unmangle]])
-  (:import [java.io ByteArrayOutputStream InputStream EOFException]
+  (:import [java.io
+             ByteArrayOutputStream EOFException File InputStream OutputStream]
            [clojure.lang Named]
            [org.apache.avro Schema Schema$Parser Schema$Type]
-           [org.apache.avro.file CodecFactory DataFileWriter DataFileReader]
+           [org.apache.avro.file
+             CodecFactory DataFileWriter DataFileReader SeekableInput
+             SeekableFileInput]
            [org.apache.avro.io
              DatumReader DatumWriter Decoder DecoderFactory
              Encoder EncoderFactory]
@@ -39,22 +42,36 @@ and `:type` keys."
 
 (defn ^:private codec-for
   "Return Avro codec factory for `codec`."
-  {:tag 'org.apache.avro.file.CodecFactory}
+  {:tag `CodecFactory}
   [codec] (if-not (string? codec) codec (CodecFactory/fromString codec)))
 
-(defn ^:private sink-for
-  "Return sinkable endpoint for `sink`."
-  [sink] (if-not (string? sink) sink (io/file sink)))
+(defn ^:private source-for
+  "Return seekable input for `source`."
+  {:tag `SeekableInput}
+  [source]
+  (condp instance? source
+    SeekableInput source
+    File          (SeekableFileInput. ^File source)
+    String        (SeekableFileInput. (io/file source))))
 
 (defn ^:private raw-schema?
   "True if schema `source` should be parsed as-is."
   [source] (or (string? source) (instance? InputStream source)))
 
 (def ^:private primitive-types
-  (->> Schema$Type .getEnumConstants (map #(.getName %)) (into #{})))
+  "Set of Avro primitive type schema strings."
+  (->> Schema$Type .getEnumConstants
+       (map #(.getName ^Schema$Type %))
+       (into #{})))
 
 (defn ^:private named-schema?
   [^Schema schema] (-> schema .getFullName primitive-types not))
+
+(defn ^:private parse-schema*
+  [^Schema$Parser parser source]
+  (if (instance? String source)
+    (.parse parser ^String source)
+    (.parse parser ^InputStream source)))
 
 (defn parse-schema
   "Parse Avro schemas in `sources`.  Each schema source may be a JSON
@@ -71,23 +88,23 @@ parsed schema from the final source is returned."
                   (when (named-schema? source)
                     (.addTypes parser {(.getFullName ^Schema source) source})))
                 (->> (if (raw-schema? source) source (clj->json source))
-                     (.parse parser))))
+                     (parse-schema* parser))))
             nil
             sources)))
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
-  {:tag 'abracad.avro.ClojureDatumReader}
+  {:tag `ClojureDatumReader}
   ([] (ClojureDatumReader.))
   ([schema] (ClojureDatumReader. schema))
   ([expected actual] (ClojureDatumReader. expected actual)))
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
-  {:tag 'org.apache.avro.file.DataFileReader}
+  {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
   ([expected source]
-     (DataFileReader. (sink-for source) (datum-reader expected))))
+     (DataFileReader/openReader (source-for source) (datum-reader expected))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
@@ -96,22 +113,27 @@ parsed schema from the final source is returned."
 (defn binary-decoder
   "Return a binary-encoding decoder for `source`.  The `source` may be
 an input stream, a byte array, or a vector of `[bytes off len]`."
-  {:tag 'org.apache.avro.io.Decoder}
+  {:tag `Decoder}
   [source]
-  (if-not (vector? source)
-    (decoder-factory binaryDecoder source nil)
+  (if (vector? source)
     (let [[source off len] source]
-      (decoder-factory binaryDecoder source off len nil))))
+      (decoder-factory binaryDecoder source off len nil))
+    (if (instance? InputStream source)
+      (decoder-factory binaryDecoder ^InputStream source nil)
+      (decoder-factory binaryDecoder ^bytes source nil))))
 
 (defn direct-binary-decoder
   "Return a non-buffered binary-encoding decoder for `source`."
-  {:tag 'org.apache.avro.io.Decoder}
+  {:tag `Decoder}
   [source] (decoder-factory directBinaryDecoder source nil))
 
 (defn json-decoder
   "Return a JSON-encoding decoder for `source` using `schema`."
-  {:tag 'org.apache.avro.io.Decoder}
-  [schema source] (decoder-factory jsonDecoder schema source))
+  {:tag `Decoder}
+  [schema source]
+  (if (instance? InputStream source)
+    (decoder-factory jsonDecoder ^Schema schema ^InputStream source)
+    (decoder-factory jsonDecoder ^Schema schema ^String source)))
 
 (defn ^:private coerce
   "Coerce `x` to be of class `c` by applying `f` to it iff `x` isn't
@@ -142,20 +164,25 @@ decoded serially from `source`."
 
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
-  {:tag 'abracad.avro.ClojureDatumWriter}
+  {:tag `ClojureDatumWriter}
   ([] (ClojureDatumWriter.))
   ([schema] (ClojureDatumWriter. schema)))
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
-  {:tag 'org.apache.avro.file.DataFileWriter}
+  {:tag `DataFileWriter}
   ([] (DataFileWriter. (datum-writer)))
-  ([sink] (doto (data-file-writer) (.appendTo (sink-for sink))))
-  ([schema sink] (data-file-writer nil schema sink))
+  ([sink]
+     (let [^DataFileWriter dfw (data-file-writer)]
+       (doto dfw (.appendTo (io/file sink)))))
+  ([schema sink]
+     (data-file-writer nil schema sink))
   ([codec schema sink]
-     (let [writer (data-file-writer)]
+     (let [^DataFileWriter writer (data-file-writer)]
        (when codec (.setCodec writer (codec-for codec)))
-       (.create writer schema (sink-for sink))
+       (if (instance? OutputStream)
+         (.create writer ^Schema schema ^OutputStream sink)
+         (.create writer ^Schema schema (io/file sink)))
        writer)))
 
 (defmacro ^:private encoder-factory
@@ -164,18 +191,19 @@ decoded serially from `source`."
 
 (defn binary-encoder
   "Return a binary-encoding encoder for `sink`."
-  {:tag 'org.apache.avro.io.Encoder}
+  {:tag `Encoder}
   [sink] (encoder-factory binaryEncoder sink nil))
 
 (defn direct-binary-encoder
   "Return an unbuffered binary-encoding encoder for `sink`."
-  {:tag 'org.apache.avro.io.Encoder}
+  {:tag `Encoder}
   [sink] (encoder-factory directBinaryEncoder sink nil))
 
 (defn json-encoder
   "Return a JSON-encoding encoder for `sink` using `schema`."
-  {:tag 'org.apache.avro.io.Encoder}
-  [schema sink] (encoder-factory jsonEncoder schema sink))
+  {:tag `Encoder}
+  [schema sink]
+  (encoder-factory jsonEncoder ^Schema schema ^OutputStream sink))
 
 (defn encode
   "Serially encode each record in `records` to `sink` using `schema`.
