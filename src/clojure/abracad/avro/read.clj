@@ -17,9 +17,9 @@
   (or (get avro/*avro-readers* rname)
       (if-let [reader (.getProp schema "abracad.reader")]
         (case reader
-          nil      nil
           "vector" vector
-          #_else   (-> reader symbol resolve)))))
+          #_else   (throw (ex-info "unknown `abracad.reader`"
+                                   {:reader reader}))))))
 
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
