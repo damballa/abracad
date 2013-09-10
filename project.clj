@@ -12,4 +12,4 @@
                  [org.apache.avro/avro "1.7.5"]
                  [cheshire/cheshire "5.2.0"]]
   :plugins [[codox/codox "0.6.4"]]
-  :codox {:include [abracad.avro]})
+  :codox {:include [abracad.avro abracad.avro.edn]})
