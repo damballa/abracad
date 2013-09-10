@@ -14,7 +14,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.4.2"]
+[com.damballa/abracad "0.4.3"]
 ```
 
 ## Usage
@@ -75,6 +75,30 @@ The Avro type deserialization mappings are as follows:
   - Bytes values currently always deserialize as primitive byte arrays
   - Records deserialize as maps with keyword field names and `:type`
     metadata indicating the Avro schema name
+
+#### Record de/serialization tweaking
+
+In addition to the generic map de/serialization, records may also be
+generically de/serialized as vectors.  During serialization, whenever
+a record is expected and a vector is encountered, the vector will be
+serialized by matching fields by position, so long as the expected and
+provided numbers of fields match.
+
+During deserialization, a record schema with the annotation
+`:abracad.reader` set to `"vector"` will be deserialized as a vector,
+with fields encoded by position.
+
+```clj
+(let [schema (avro/parse-schema
+              {:name "example", :type "record",
+               :fields [{:name "left", :type "string"}
+                        {:name "right", :type "long"}]
+               :abracad.reader "vector"})]
+  (->> ["foo" 31337]
+       (avro/binary-encoded schema)
+       (avro/decode schema)))
+;;=> ["foo" 31337"]
+```
 
 ### Custom record de/serialization
 
