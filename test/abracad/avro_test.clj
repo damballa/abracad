@@ -94,16 +94,22 @@
     (is (= records thawed))))
 
 (deftest test-extra
-  (let [schema (avro/parse-schema
-                {:name "Example", :type "record",
-                 :fields [{:name "foo", :type "long"}]})
+  (let [sdata {:name "Example", :type "record",
+               :abracad.checked "fields",
+               :fields [{:name "foo", :type "long"}]}
+        schema (avro/parse-schema sdata)
         record {:foo 0, :bar 1}]
     (is (thrown? clojure.lang.ExceptionInfo
-          (avro/binary-encoded schema record)))
+                 (avro/binary-encoded schema record)))
     (is (= {:foo 0}
            (->> (vary-meta record assoc :type 'Example)
                 (avro/binary-encoded schema)
-                (avro/decode schema))))))
+                (avro/decode schema))))
+    (is (= {:foo 0}
+           (let [schema (avro/parse-schema
+                         (dissoc sdata :abracad.checked))]
+             (->> (avro/binary-encoded schema record)
+                  (avro/decode schema)))))))
 
 (deftest test-positional
   (let [schema (avro/parse-schema
