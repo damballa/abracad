@@ -96,12 +96,16 @@
 (deftest test-extra
   (let [schema (avro/parse-schema
                 {:name "Example", :type "record",
-                 :fields [{:name "foo", :type "long"}]})
-        record {:foo 0, :bar 1}]
+                 :fields [{:name "foo", :type "long"}]})]
     (is (thrown? clojure.lang.ExceptionInfo
-          (avro/binary-encoded schema record)))
+          (->> {:foo 0, :bar 1}
+               (avro/binary-encoded schema))))
     (is (= {:foo 0}
-           (->> (vary-meta record assoc :type 'Example)
+           (->> ^{:type 'Example} {:foo 0, :bar 1}
+                (avro/binary-encoded schema)
+                (avro/decode schema))))
+    (is (= {:foo 0}
+           (->> ^:avro/unchecked {:foo 0, :bar 1}
                 (avro/binary-encoded schema)
                 (avro/decode schema))))))
 

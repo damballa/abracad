@@ -19,6 +19,11 @@
 (def ^:const edn-meta
   "abracad.avro.edn.Meta")
 
+(def ^:dynamic *unchecked*
+  "When `true`, do not perform schema field validation checks during
+record serialization."
+  false)
+
 (defn element-schema?
   [^Schema schema]
   (= edn-element (.getFullName schema)))
@@ -106,7 +111,7 @@
     (or (and (edn-schema? schema) (= sname (edn/schema-name datum)))
         (= sname (avro/schema-name datum)))))
 
-(defn write-record
+(defn write-record*
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (case-expr (.getFullName schema)
     edn-element (.write writer (elide schema) datum out)
@@ -115,8 +120,17 @@
                (.write writer schema (meta datum) out))
     #_else (let [wrf (cond (schema-equal? schema datum) wr-named
                            (instance? Indexed datum) wr-positional
+                           *unchecked* wr-named
                            :else wr-named-checked)]
              (wrf writer schema datum out))))
+
+(defn write-record
+  [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
+  (let [unchecked (-> datum meta (:avro/unchecked *unchecked*))]
+    (if (= unchecked *unchecked*)
+      (write-record* writer schema datum out)
+      (binding [*unchecked* unchecked]
+        (write-record* writer schema datum out)))))
 
 (defn write-enum
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
