@@ -106,6 +106,10 @@
     (or (and (edn-schema? schema) (= sname (edn/schema-name datum)))
         (= sname (avro/schema-name datum)))))
 
+(defn schema-checked?
+  [^Schema schema]
+  (= "fields" (.getProp schema "abracad.checked")))
+
 (defn write-record
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (case-expr (.getFullName schema)
@@ -115,7 +119,8 @@
                (.write writer schema (meta datum) out))
     #_else (let [wrf (cond (schema-equal? schema datum) wr-named
                            (instance? Indexed datum) wr-positional
-                           :else wr-named-checked)]
+                           (schema-checked? schema) wr-named-checked
+                           :else wr-named)]
              (wrf writer schema datum out))))
 
 (defn write-enum
