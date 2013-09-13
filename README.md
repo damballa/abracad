@@ -14,7 +14,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.4.3"]
+[com.damballa/abracad "0.4.4"]
 ```
 
 ## Usage
@@ -99,6 +99,13 @@ with fields encoded by position.
        (avro/decode schema)))
 ;;=> ["foo" 31337"]
 ```
+
+Maps serialized as records will be checked to ensure that they do not
+have any extra entries not encoded by the schema, raising an exception
+if extra entries are present.  This check may be avoided for
+individual records by including `:type` metadata matching the schema.
+The check may be en/disabled recursively for a record and all
+contained records via the `:abracad.avro/unchecked` metadata.
 
 ### Custom record de/serialization
 
