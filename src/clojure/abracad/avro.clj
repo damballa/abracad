@@ -180,7 +180,7 @@ decoded serially from `source`."
   ([codec schema sink]
      (let [^DataFileWriter writer (data-file-writer)]
        (when codec (.setCodec writer (codec-for codec)))
-       (if (instance? OutputStream)
+       (if (instance? OutputStream sink)
          (.create writer ^Schema schema ^OutputStream sink)
          (.create writer ^Schema schema (io/file sink)))
        writer)))
