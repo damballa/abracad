@@ -118,4 +118,5 @@
         records [[0 "foo"] [1 "bar"] [2 "baz"]]
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+    (is (= records thawed))
+    (is (= 'Example (-> thawed first type)))))

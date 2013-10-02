@@ -1,8 +1,9 @@
 (ns abracad.avro.read
   "Generic data reading implementation."
   {:private true}
-  (:require [abracad.avro.util :refer [mangle unmangle field-keyword]]
-            [abracad.avro :as avro])
+  (:require [abracad.avro :as avro]
+            [abracad.avro.util
+             :refer [mangle unmangle field-keyword if-not-let]])
   (:import [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]
            [abracad.avro ClojureDatumReader]))
@@ -12,32 +13,44 @@
   (let [ns (.getNamespace schema), n (-> schema .getName unmangle)]
     (if ns (symbol (unmangle ns) n) (symbol n))))
 
+(defn record-plain
+  "Record as plain decoded data structures, with :type metadata
+indicating schema name."
+  [rname record]
+  (with-meta record {:type rname}))
+
+(defn record-reader
+  "Generate wrapper for provided Avro reader function."
+  [f] (fn [_ record] (apply f record)))
+
 (defn reader-fn
+  "Return tuple of `(named?, readerf)` for provided Avro `schema` and
+schema name symbol `rname`."
   [^Schema schema rname]
-  (or (get avro/*avro-readers* rname)
-      (if-let [reader (.getProp schema "abracad.reader")]
-        (case reader
-          "vector" vector
-          #_else   (throw (ex-info "unknown `abracad.reader`"
-                                   {:reader reader}))))))
+  (if-let [f (get avro/*avro-readers* rname)]
+    [false (record-reader f)]
+    (if-not-let [reader (.getProp schema "abracad.reader")]
+      [true record-plain]
+      (case reader
+        "vector" [false record-plain]
+        #_else   (throw (ex-info "unknown `abracad.reader`"
+                                 {:reader reader}))))))
 
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
   (let [rname (schema-symbol expected)
-        readerf (reader-fn expected rname)
-        [reducef record] (if readerf
-                           [(fn [v ^Schema$Field f]
-                              (conj! v (.read reader nil (.schema f) in)))
-                            (transient [])]
+        [named? readerf] (reader-fn expected rname)
+        [reducef record] (if named?
                            [(fn [m ^Schema$Field f]
                               (assoc! m
                                 (field-keyword f)
                                 (.read reader nil (.schema f) in)))
-                            (transient {})])
+                            (transient {})]
+                           [(fn [v ^Schema$Field f]
+                              (conj! v (.read reader nil (.schema f) in)))
+                            (transient [])])
         record (->> in .readFieldOrder (reduce reducef record) persistent!)]
-    (if readerf
-      (apply readerf record)
-      (with-meta record {:type rname}))))
+    (readerf rname record)))
 
 (defn read-enum
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
