@@ -186,9 +186,11 @@ record serialization."
 
 (defn avro-record?
   [^Schema schema datum]
-  (and (map? datum)
-       (every? (->> (.getFields schema) (map field-keyword) set)
-               (avro/field-list datum))))
+  (or (and (vector? datum)
+           (= (count datum) (-> schema .getFields count)))
+      (and (map? datum)
+           (every? (->> schema .getFields (map field-keyword) set)
+                   (avro/field-list datum)))))
 
 (defn avro-enum?
   [^Schema schema datum]

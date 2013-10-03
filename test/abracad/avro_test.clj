@@ -114,8 +114,9 @@
                 {:name "Example", :type "record",
                  :abracad.reader "vector",
                  :fields [{:name "left", :type "long"}
-                          {:name "right", :type "string"}]})
-        records [[0 "foo"] [1 "bar"] [2 "baz"]]
+                          {:name "right", :type "string"}]}
+                ["Example" "string"])
+        records [[0 "foo"] [1 "bar"] [2 "baz"] "quux"]
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))
