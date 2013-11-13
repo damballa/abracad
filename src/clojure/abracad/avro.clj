@@ -54,28 +54,13 @@
       (and (string? source)
            (.lookingAt (re-matcher #"[\[\{\"]" source)))))
 
-(def ^:private primitive-types
-  "Set of Avro primitive type schema strings."
-  (->> Schema$Type .getEnumConstants
-       (map #(.getName ^Schema$Type %))
-       (into #{})))
-
-(defn ^:private named-schema?
-  [^Schema schema] (-> schema .getFullName primitive-types not))
-
-(defn ^:private parse-schema*
+(defn ^:private parse-schema-raw
   [^Schema$Parser parser source]
   (if (instance? String source)
     (.parse parser ^String source)
     (.parse parser ^InputStream source)))
 
-(defn parse-schema
-  "Parse Avro schemas in `sources`.  Each schema source may be a JSON
-string, an input stream containing a JSON schema, a Clojure data
-structure which may be converted to a JSON schema, or an
-already-parsed Avro schema object.  The schema for each subsequent
-source may refer to the types defined in the previous schemas.  The
-parsed schema from the final source is returned."
+(defn ^:private parse-schema*
   {:tag `Schema}
   [& sources]
   (let [parser (Schema$Parser.)]
@@ -83,9 +68,19 @@ parsed schema from the final source is returned."
               (->> (cond (schema? source) (str source)
                          (raw-schema? source) source
                          :else (clj->json source))
-                   (parse-schema* parser)))
+                   (parse-schema-raw parser)))
             nil
             sources)))
+
+(defn parse-schema
+  "Parse Avro schemas in `source` and `sources`.  Each schema source may be a
+JSON string, an input stream containing a JSON schema, a Clojure data structure
+which may be converted to a JSON schema, or an already-parsed Avro schema
+object.  The schema for each subsequent source may refer to the types defined in
+the previous schemas.  The parsed schema from the final source is returned."
+  {:tag `Schema}
+  ([source] (if (schema? source) source (parse-schema* source)))
+  ([source & sources] (apply parse-schema* source sources)))
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
