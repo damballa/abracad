@@ -4,7 +4,7 @@
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle]])
+            [abracad.avro.util :refer [returning mangle unmangle coerce]])
   (:import [java.io
              ByteArrayOutputStream EOFException File InputStream OutputStream]
            [clojure.lang Named]
@@ -139,11 +139,6 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
   (if (instance? InputStream source)
     (decoder-factory jsonDecoder ^Schema schema ^InputStream source)
     (decoder-factory jsonDecoder ^Schema schema ^String source)))
-
-(defn ^:private coerce
-  "Coerce `x` to be of class `c` by applying `f` to it iff `x` isn't
-already an instance of `c`."
-  [c f x] (if (instance? c x) x (f x)))
 
 (defn decode
   "Decode and return one object from `source` using `schema`.  The

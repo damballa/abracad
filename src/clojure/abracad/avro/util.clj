@@ -47,3 +47,8 @@ evaluated at macro-expansion time."
   "Like `if-let`, but with order of `then` and `else` swapped."
   [bindings then else]
   `(if-let ~bindings ~else ~then))
+
+(defn coerce
+  "Coerce `x` to be of class `c` by applying `f` to it iff `x` isn't
+already an instance of `c`."
+  [c f x] (if (instance? c x) x (f x)))

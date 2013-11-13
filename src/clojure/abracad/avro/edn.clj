@@ -1,5 +1,6 @@
 (ns abracad.avro.edn
-  (:require [abracad.avro :as avro])
+  (:require [abracad.avro :as avro]
+            [abracad.avro.util :refer [coerce]])
   (:import [clojure.lang BigInt Cons IMeta IPersistentList IPersistentMap
              IPersistentSet IPersistentVector ISeq Keyword PersistentArrayMap
              PersistentQueue Ratio Sorted Symbol]
@@ -227,16 +228,13 @@
   "Return new EDN-in-Avro schema.  If provided, incorporate
 `schemas` (which should be compatible with `avro/parse-schema`) as
 additional allowed element types."
-  ([] (new-schema nil))
-  ([schemas]
-     (let [schemas (map avro/parse-schema schemas)
-           names (map #(.getFullName ^Schema %) schemas)]
-       (apply avro/parse-schema
-              `[~@schemas
-                {:type "record", :name "abracad.avro.edn.Element",
-                 :fields [{:name "value"
-                           :type [{:type "record", :name "Meta"
-                                   :fields [{:name "value", :type "Element"}
-                                            {:name "meta", :type "Element"}]}
-                                  ~@names
-                                  ~@base-elements]}]}]))))
+  [& schemas]
+  (let [schemas (mapcat (partial coerce IPersistentVector vector) schemas)]
+    (avro/parse-schema
+     `{:type "record", :name "abracad.avro.edn.Element",
+       :fields [{:name "value"
+                 :type [{:type "record", :name "Meta"
+                         :fields [{:name "value", :type "Element"}
+                                  {:name "meta", :type "Element"}]}
+                        ~@schemas
+                        ~@base-elements]}]})))
