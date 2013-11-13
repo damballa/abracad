@@ -132,3 +132,17 @@
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))
+
+(deftest test-sub-types
+  (let [schema1 (avro/parse-schema
+                 {:name "Example0", :type "record",
+                  :abracad.reader "vector"
+                  :fields [{:name "field0", :type "long"}]}
+                 {:name "Example1", :type "record",
+                  :abracad.reader "vector"
+                  :fields [{:name "field0", :type "Example0"}]})
+        schema (avro/parse-schema schema1 "Example0")
+        records [[0] [1] [2] [3] [4] [5]]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))

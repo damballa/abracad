@@ -43,9 +43,16 @@
     File          (SeekableFileInput. ^File source)
     String        (SeekableFileInput. (io/file source))))
 
+(defn schema?
+  "True iff `schema` is an Avro `Schema` instance."
+  [schema] (instance? Schema schema))
+
 (defn ^:private raw-schema?
   "True if schema `source` should be parsed as-is."
-  [source] (or (string? source) (instance? InputStream source)))
+  [source]
+  (or (instance? InputStream source)
+      (and (string? source)
+           (.lookingAt (re-matcher #"[\[\{\"]" source)))))
 
 (def ^:private primitive-types
   "Set of Avro primitive type schema strings."
@@ -73,12 +80,10 @@ parsed schema from the final source is returned."
   [& sources]
   (let [parser (Schema$Parser.)]
     (reduce (fn [_ source]
-              (if (instance? Schema source)
-                (returning source
-                  (when (named-schema? source)
-                    (.addTypes parser {(.getFullName ^Schema source) source})))
-                (->> (if (raw-schema? source) source (clj->json source))
-                     (parse-schema* parser))))
+              (->> (cond (schema? source) (str source)
+                         (raw-schema? source) source
+                         :else (clj->json source))
+                   (parse-schema* parser)))
             nil
             sources)))
 
