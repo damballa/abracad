@@ -21,20 +21,9 @@
   "True iff `x` is something which may be provided as an argument to `name`."
   [x] (or (string? x) (instance? Named x)))
 
-(defn ^:private mangle-value
-  "Mange the value of key `k` in map `m`."
-  [m k] (let [x (m k)] (if-not (named? x) m (assoc m k (-> x name mangle)))))
-
-(def ^:private mangled-names
-  [:name :namespace :type :items :values])
-
 (defn ^:private schema-mangle
-  "If `form` is a map, mangle the values of the `:name`, `:namespace`,
-and `:type` keys."
-  [form]
-  (if-not (map? form)
-    form
-    (reduce mangle-value form mangled-names)))
+  "Mangle `named` forms."
+  [form] (if-not (named? form) form (-> form name mangle)))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."

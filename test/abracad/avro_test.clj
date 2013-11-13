@@ -121,3 +121,14 @@
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))
     (is (= 'Example (-> thawed first type)))))
+
+(deftest test-mangle-union
+  (let [schema (avro/parse-schema
+                {:name "mangle-me", :type "record",
+                 :abracad.reader "vector"
+                 :fields [{:name "field0", :type "long"}]}
+                ["mangle-me" "long"])
+        records [0 [1] [2] 3 4 [5]]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))
