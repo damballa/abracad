@@ -157,3 +157,12 @@
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))
+
+(deftest test-tuple-schema
+  (let [schema1 (avro/tuple-schema ["string" "long" "long"])
+        schema2 (avro/tuple-schema ["long" schema1])
+        schema (avro/parse-schema schema2)
+        records [[0 ["foo" 1 2]] [3 ["bar" 4 5]]]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= records thawed))))

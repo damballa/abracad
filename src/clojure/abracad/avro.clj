@@ -85,6 +85,18 @@ the previous schemas.  The parsed schema from the final source is returned."
   ([source] (if (schema? source) source (parse-schema* source)))
   ([source & sources] (apply parse-schema* source sources)))
 
+(defn tuple-schema
+  "Return Clojure-data Avro schema for record consisting of fields of the
+provided `types`, and optionally named `name`."
+  ([types] (-> "abracad.avro.tuple" gensym name (tuple-schema types)))
+  ([name types]
+     {:name name, :type "record",
+      :abracad.reader "vector",
+      :fields (map-indexed (fn [i type]
+                             {:name (str "field" i),
+                              :type type})
+                           types)}))
+
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
