@@ -8,6 +8,7 @@
   :global-vars {*warn-on-reflection* true}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
+  :javac-options ["-target" "1.6" "-source" "1.6"]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.apache.avro/avro "1.7.5"]
                  [cheshire/cheshire "5.2.0"]]
