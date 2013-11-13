@@ -5,7 +5,7 @@
               :url "http://www.eclipse.org/legal/epl-v10.html"}
              {:name "Apache License, Version 2.0"
               :url "http://www.apache.org/licenses/LICENSE-2.0.html"}]
-  :warn-on-reflection true
+  :global-vars {*warn-on-reflection* true}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :dependencies [[org.clojure/clojure "1.5.1"]
