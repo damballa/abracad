@@ -17,13 +17,20 @@
              Encoder EncoderFactory]
            [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
 
+(defn schema?
+  "True iff `schema` is an Avro `Schema` instance."
+  [schema] (instance? Schema schema))
+
 (defn ^:private named?
   "True iff `x` is something which may be provided as an argument to `name`."
   [x] (or (string? x) (instance? Named x)))
 
 (defn ^:private schema-mangle
-  "Mangle `named` forms."
-  [form] (if-not (named? form) form (-> form name mangle)))
+  "Mangle `named` forms and existing schemas."
+  [form]
+  (cond (named? form) (-> form name mangle)
+        (schema? form) (json/parse-string (str form))
+        :else form))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."
@@ -42,10 +49,6 @@
     SeekableInput source
     File          (SeekableFileInput. ^File source)
     String        (SeekableFileInput. (io/file source))))
-
-(defn schema?
-  "True iff `schema` is an Avro `Schema` instance."
-  [schema] (instance? Schema schema))
 
 (defn ^:private raw-schema?
   "True if schema `source` should be parsed as-is."
