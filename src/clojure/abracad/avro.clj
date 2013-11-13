@@ -80,6 +80,7 @@ structure which may be converted to a JSON schema, or an
 already-parsed Avro schema object.  The schema for each subsequent
 source may refer to the types defined in the previous schemas.  The
 parsed schema from the final source is returned."
+  {:tag `Schema}
   [& sources]
   (let [parser (Schema$Parser.)]
     (reduce (fn [_ source]
