@@ -166,3 +166,12 @@
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))
+
+(deftest test-grouping-schema
+  (let [schema1 (avro/unparse-schema (avro/tuple-schema ["string" "long"]))
+        schema2 (avro/unparse-schema (avro/grouping-schema 2 schema1))
+        schema3 (avro/unparse-schema (avro/grouping-schema 1 schema1))]
+    (is (= schema1 schema2))
+    (is (not= schema1 schema3))
+    (is (= "ascending" (get-in schema3 [:fields 0 :order] "ascending")))
+    (is (= "ignore" (get-in schema3 [:fields 1 :order] "ascending")))))

@@ -85,6 +85,11 @@ the previous schemas.  The parsed schema from the final source is returned."
   ([source] (if (schema? source) source (parse-schema* source)))
   ([source & sources] (apply parse-schema* source sources)))
 
+(defn unparse-schema
+  "Return Avro-normalized Clojure data version of `schema`.  If `schema` is not
+already a parsed schema, will first normalize and parse it."
+  [schema] (-> schema parse-schema str (json/parse-string true)))
+
 (defn tuple-schema
   "Return Clojure-data Avro schema for record consisting of fields of the
 provided `types`, and optionally named `name`."
@@ -92,10 +97,25 @@ provided `types`, and optionally named `name`."
   ([name types]
      {:name name, :type "record",
       :abracad.reader "vector",
-      :fields (map-indexed (fn [i type]
-                             {:name (str "field" i),
-                              :type type})
-                           types)}))
+      :fields (vec (map-indexed (fn [i type]
+                                  {:name (str "field" i),
+                                   :type type})
+                                types))}))
+
+(defn ^:private order-ignore
+  "Update all but the first `n` record-field specifiers `fields` to have an
+`:order` of \"ignore\"."
+  [fields n]
+  (vec (map-indexed (fn [i field]
+                      (if (< i n)
+                        field
+                        (assoc field :order "ignore")))
+                    fields)))
+
+(defn grouping-schema
+  "Produce a grouping schema version of record schema `schema` which ignores all
+but the first `n` fields when sorting."
+  [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
