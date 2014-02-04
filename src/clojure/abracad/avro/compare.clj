@@ -19,18 +19,16 @@
 
 (defn compare-record
   ^long [x y ^Schema schema equals]
-  (reduce (fn [_ ^Schema$Field f]
-            (if (order-ignore? f)
-              0
-              (let [schema (.schema f), name (keyword (.name f))
-                    x (avro/field-get x name), y (avro/field-get y name)
-                    result (compare x y schema equals)]
-                (if (zero? result)
-                  0
-                  (reduced (if (order-ascending? f)
-                             result
-                             (- result)))))))
-          0 (.getFields schema)))
+  (or (some (fn [^Schema$Field f]
+              (if-not (order-ignore? f)
+                (let [schema (.schema f), name (keyword (.name f))
+                      x (avro/field-get x name), y (avro/field-get y name)
+                      result (compare x y schema equals)]
+                  (if-not (zero? result)
+                    (if (order-ascending? f)
+                      result
+                      (- result))))))
+            (.getFields schema)) 0))
 
 (defn compare-enum
   ^long [x y ^Schema schema equals]

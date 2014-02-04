@@ -4,7 +4,7 @@
   (:require [abracad.avro :as avro]
             [abracad.avro.edn :as edn]
             [abracad.avro.util :refer [case-expr case-enum mangle unmangle
-                                       field-keyword]])
+                                       field-keyword s->]])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
@@ -141,7 +141,7 @@ record serialization."
   (let [t (type datum)]
     (cond (string? t) t
           (instance? Named t)
-          , (let [ns (some-> t namespace mangle)
+          , (let [ns (s-> t namespace mangle)
                   n (-> t name mangle)]
               (if ns (str ns "." n) n))
           (class? t) (.getName ^Class t))))
@@ -226,11 +226,10 @@ record serialization."
             (avro/schema-name datum))]
     (if-let [index (and n (.getIndexNamed schema n))]
       index
-      (->> (vec (.getTypes schema))
-           (reduce-kv (fn [_ i schema]
-                        (when (schema-match? schema datum)
-                          (reduced i)))
-                      nil)))))
+      (->> (zipmap (range) (vec (.getTypes schema)))
+           (some (fn [[i schema]]
+                   (if (schema-match? schema datum)
+                     i)))))))
 
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]
