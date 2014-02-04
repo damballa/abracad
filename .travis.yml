@@ -1,0 +1,10 @@
+lein: lein2
+language: clojure
+install: lein2 deps
+script: lein2 test
+jdk:
+  - openjdk7
+  - oraclejdk7
+branches:
+  only:
+    - master
