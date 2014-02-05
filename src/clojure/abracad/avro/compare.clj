@@ -5,7 +5,7 @@
   (:require [clojure.core :as cc]
             [abracad.avro :as avro]
             [abracad.avro.write :refer [resolve-union*]]
-            [abracad.avro.util :refer [case-enum]])
+            [abracad.avro.util :refer [case-enum if-not-let]])
   (:import [org.apache.avro Schema Schema$Field Schema$Field$Order Schema$Type]
            [abracad.avro ClojureData]))
 
@@ -19,16 +19,19 @@
 
 (defn compare-record
   ^long [x y ^Schema schema equals]
-  (or (some (fn [^Schema$Field f]
-              (if-not (order-ignore? f)
-                (let [schema (.schema f), name (keyword (.name f))
-                      x (avro/field-get x name), y (avro/field-get y name)
-                      result (compare x y schema equals)]
-                  (if-not (zero? result)
-                    (if (order-ascending? f)
-                      result
-                      (- result))))))
-            (.getFields schema)) 0))
+  (loop [fields (.getFields schema)]
+    (if-not-let [[^Schema$Field f & fields] (seq fields)]
+      0
+      (if (order-ignore? f)
+        (recur fields)
+        (let [schema (.schema f), name (keyword (.name f))
+              x (avro/field-get x name), y (avro/field-get y name)
+              result (compare x y schema equals)]
+          (if (zero? result)
+            (recur fields)
+            (if (order-ascending? f)
+              result
+              (- result))))))))
 
 (defn compare-enum
   ^long [x y ^Schema schema equals]
