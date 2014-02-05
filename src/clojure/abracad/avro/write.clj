@@ -141,7 +141,8 @@ record serialization."
   (let [t (type datum)]
     (cond (string? t) t
           (instance? Named t)
-          , (let [ns (some-> t namespace mangle)
+          , (let [ns (namespace t)
+                  ns (if ns (mangle ns))
                   n (-> t name mangle)]
               (if ns (str ns "." n) n))
           (class? t) (.getName ^Class t))))
@@ -226,11 +227,11 @@ record serialization."
             (avro/schema-name datum))]
     (if-let [index (and n (.getIndexNamed schema n))]
       index
-      (->> (vec (.getTypes schema))
-           (reduce-kv (fn [_ i schema]
-                        (when (schema-match? schema datum)
-                          (reduced i)))
-                      nil)))))
+      (loop [schemas (.getTypes schema), i (long 0)]
+        (if-let [[schema & schemas] (seq schemas)]
+          (if (schema-match? schema datum)
+            i
+            (recur schemas (inc i))))))))
 
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]
