@@ -39,9 +39,19 @@ ClojureDatumWriter(Schema schema) {
 
 @Override
 public void
-write(Schema schema, Object datum, Encoder out)
-        throws IOException {
-    super.write(schema, datum, out);
+write(Schema schema, Object datum, Encoder out) throws IOException {
+    try {
+        switch (schema.getType()) {
+        case INT: out.writeInt(RT.intCast(datum)); break;
+        case LONG: out.writeLong(RT.longCast(datum)); break;
+        case FLOAT: out.writeFloat(RT.floatCast(datum)); break;
+        case DOUBLE: out.writeDouble(RT.doubleCast(datum)); break;
+        case BOOLEAN: out.writeBoolean(RT.booleanCast(datum)); break;
+        default: super.write(schema, datum, out); break;
+        }
+    } catch (NullPointerException e) {
+        throw super. npe(e, " of " + schema.getFullName());
+    }
 }
 
 @Override

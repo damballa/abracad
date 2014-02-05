@@ -4,6 +4,11 @@
   (:import [java.io ByteArrayOutputStream]
            [java.net InetAddress]))
 
+(defn roundtrip
+  [schema & records]
+  (->> (apply avro/binary-encoded schema records)
+       (avro/decode-seq schema)))
+
 (defrecord Example [foo-foo bar])
 
 (defrecord SubExample [^long baz])
@@ -52,6 +57,41 @@
         bytes (apply avro/binary-encoded schema records)]
     (binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
       (is (= records (doall (avro/decode-seq schema bytes)))))))
+
+(deftest test-int
+  (let [schema (avro/parse-schema 'int)]
+    (is (= [12345] (roundtrip schema (int 12345))))
+    (is (= [12345] (roundtrip schema (long 12345))))
+    (is (= [12345] (roundtrip schema (float 12345))))
+    (is (= [12345] (roundtrip schema (double 12345))))))
+
+(deftest test-long
+  (let [schema (avro/parse-schema 'long)]
+    (is (= [12345] (roundtrip schema (int 12345))))
+    (is (= [12345] (roundtrip schema (long 12345))))
+    (is (= [12345] (roundtrip schema (float 12345))))
+    (is (= [12345] (roundtrip schema (double 12345))))))
+
+(deftest test-float
+  (let [schema (avro/parse-schema 'float)]
+    (is (= [12345.0] (roundtrip schema (int 12345))))
+    (is (= [12345.0] (roundtrip schema (long 12345))))
+    (is (= [12345.0] (roundtrip schema (float 12345))))
+    (is (= [12345.0] (roundtrip schema (double 12345))))))
+
+(deftest test-double
+  (let [schema (avro/parse-schema 'double)]
+    (is (= [12345.0] (roundtrip schema (int 12345))))
+    (is (= [12345.0] (roundtrip schema (long 12345))))
+    (is (= [12345.0] (roundtrip schema (float 12345))))
+    (is (= [12345.0] (roundtrip schema (double 12345))))))
+
+(deftest test-boolean
+  (let [schema (avro/parse-schema 'boolean)]
+    (is (= [true] (roundtrip schema :anything)))
+    (is (= [true] (roundtrip schema true)))
+    (is (= [false] (roundtrip schema false)))
+    (is (= [false] (roundtrip schema nil)))))
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}
