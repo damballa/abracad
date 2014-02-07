@@ -1,10 +1,10 @@
-lein: lein2
 language: clojure
-install: lein2 deps
-script: lein2 test
+lein: lein2
+script: lein2 test-all
 jdk:
+  - openjdk6
   - openjdk7
   - oraclejdk7
-branches:
-  only:
-    - master
+matrix:
+  allow_failures:
+    - oraclejdk7
