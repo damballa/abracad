@@ -8,3 +8,4 @@ jdk:
 matrix:
   allow_failures:
     - oraclejdk7
+
