@@ -98,8 +98,9 @@ provided `types`, and optionally named `name`."
      {:name name, :type "record",
       :abracad.reader "vector",
       :fields (vec (map-indexed (fn [i type]
-                                  {:name (str "field" i),
-                                   :type type})
+                                  (merge {:name (str "field" i),
+                                          :type type}
+                                         (meta type)))
                                 types))}))
 
 (defn ^:private order-ignore
