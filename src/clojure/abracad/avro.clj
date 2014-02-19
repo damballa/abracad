@@ -6,12 +6,13 @@
             [cheshire.core :as json]
             [abracad.avro.util :refer [returning mangle unmangle coerce]])
   (:import [java.io
-             ByteArrayOutputStream EOFException File InputStream OutputStream]
+             ByteArrayInputStream ByteArrayOutputStream EOFException
+             File FileInputStream InputStream OutputStream]
            [clojure.lang Named]
            [org.apache.avro Schema Schema$Parser Schema$Type]
            [org.apache.avro.file
              CodecFactory DataFileWriter DataFileReader SeekableInput
-             SeekableFileInput]
+             SeekableFileInput SeekableByteArrayInput]
            [org.apache.avro.io
              DatumReader DatumWriter Decoder DecoderFactory
              Encoder EncoderFactory]
@@ -41,14 +42,22 @@
   {:tag `CodecFactory}
   [codec] (if-not (string? codec) codec (CodecFactory/fromString codec)))
 
-(defn ^:private source-for
-  "Return seekable input for `source`."
+(defprotocol PSeekableInput
+  "Protocol for coercing to an Avro `SeekableInput`."
+  (-seekable-input [x opts]
+    "Attempt to coerce `x` to an Avro `SeekableInput`."))
+
+(defn seekable-input
+  "Attempt to coerce `x` to an Avro `SeekableInput`."
   {:tag `SeekableInput}
-  [source]
-  (condp instance? source
-    SeekableInput source
-    File          (SeekableFileInput. ^File source)
-    String        (SeekableFileInput. (io/file source))))
+  ([x] (-seekable-input x nil))
+  ([opts x] (-seekable-input x opts)))
+
+(extend-protocol PSeekableInput
+  (Class/forName "[B") (-seekable-input [x opts] (SeekableByteArrayInput. x))
+  SeekableInput (-seekable-input [x opts] x)
+  File (-seekable-input [x opts] (SeekableFileInput. x))
+  String (-seekable-input [x opts] (seekable-input opts (io/file x))))
 
 (defn ^:private raw-schema?
   "True if schema `source` should be parsed as-is."
@@ -130,7 +139,8 @@ but the first `n` fields when sorting."
   {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
   ([expected source]
-     (DataFileReader/openReader (source-for source) (datum-reader expected))))
+     (DataFileReader/openReader
+      (seekable-input source) (datum-reader expected))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
