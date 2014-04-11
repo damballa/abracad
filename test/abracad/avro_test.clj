@@ -26,17 +26,16 @@
   [address] (InetAddress/getByAddress address))
 
 (deftest test-example
-  (let [schema (avro/parse-schema
-                {:type :record,
-                 :namespace 'abracad.core-test
-                 :name 'Example
-                 :fields [{:name "foo-foo" :type :string}
-                          {:name "bar"
-                           :type [:null
-                                  {:type :record
-                                   :name 'SubExample
-                                   :fields [{:name "baz",
-                                             :type :long}]}]}]})
+  (let [schema {:type :record,
+                :namespace 'abracad.core-test
+                :name 'Example
+                :fields [{:name "foo-foo" :type :string}
+                         {:name "bar"
+                          :type [:null
+                                 {:type :record
+                                  :name 'SubExample
+                                  :fields [{:name "baz",
+                                            :type :long}]}]}]}
         record (->Example "bar" (->SubExample 0))
         bytes (avro/binary-encoded schema record)]
     (is (= {:foo-foo "bar" :bar {:baz 0}}

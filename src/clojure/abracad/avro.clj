@@ -131,8 +131,13 @@ but the first `n` fields when sorting."
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
   ([] (ClojureDatumReader.))
-  ([schema] (ClojureDatumReader. schema))
-  ([expected actual] (ClojureDatumReader. expected actual)))
+  ([schema]
+     (ClojureDatumReader.
+      (if-not (nil? schema) (parse-schema schema))))
+  ([expected actual]
+     (ClojureDatumReader.
+      (if-not (nil? expected) (parse-schema expected))
+      (if-not (nil? actual) (parse-schema actual)))))
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
@@ -167,9 +172,10 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
   "Return a JSON-encoding decoder for `source` using `schema`."
   {:tag `Decoder}
   [schema source]
-  (if (instance? InputStream source)
-    (decoder-factory jsonDecoder ^Schema schema ^InputStream source)
-    (decoder-factory jsonDecoder ^Schema schema ^String source)))
+  (let [schema (parse-schema schema)]
+    (if (instance? InputStream source)
+      (decoder-factory jsonDecoder schema ^InputStream source)
+      (decoder-factory jsonDecoder schema ^String source))))
 
 (defn decode
   "Decode and return one object from `source` using `schema`.  The
@@ -197,7 +203,9 @@ decoded serially from `source`."
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}
   ([] (ClojureDatumWriter.))
-  ([schema] (ClojureDatumWriter. schema)))
+  ([schema]
+     (ClojureDatumWriter.
+      (if-not (nil? schema) (parse-schema schema)))))
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
@@ -210,9 +218,10 @@ decoded serially from `source`."
      (data-file-writer nil schema sink))
   ([codec schema sink]
      (let [^DataFileWriter writer (data-file-writer)
-           sink (coerce OutputStream io/output-stream sink)]
+           sink (coerce OutputStream io/output-stream sink)
+           schema (parse-schema schema)]
        (when codec (.setCodec writer (codec-for codec)))
-       (.create writer ^Schema schema ^OutputStream sink)
+       (.create writer schema ^OutputStream sink)
        writer)))
 
 (defmacro ^:private encoder-factory
@@ -233,7 +242,8 @@ decoded serially from `source`."
   "Return a JSON-encoding encoder for `sink` using `schema`."
   {:tag `Encoder}
   [schema sink]
-  (encoder-factory jsonEncoder ^Schema schema ^OutputStream sink))
+  (let [schema (parse-schema schema?)]
+    (encoder-factory jsonEncoder schema ^OutputStream sink)))
 
 (defn encode
   "Serially encode each record in `records` to `sink` using `schema`.
@@ -264,7 +274,9 @@ via `encode`."
 
 (defn compare
   "Compare `x` and `y` according to `schema`."
-  [schema x y] (.compare (ClojureData/get) x y ^Schema schema))
+  [schema x y]
+  (let [schema (parse-schema schema)]
+    (.compare (ClojureData/get) x y schema)))
 
 (defn spit
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."
