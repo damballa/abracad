@@ -209,11 +209,10 @@ decoded serially from `source`."
   ([schema sink]
      (data-file-writer nil schema sink))
   ([codec schema sink]
-     (let [^DataFileWriter writer (data-file-writer)]
+     (let [^DataFileWriter writer (data-file-writer)
+           sink (coerce OutputStream io/output-stream sink)]
        (when codec (.setCodec writer (codec-for codec)))
-       (if (instance? OutputStream sink)
-         (.create writer ^Schema schema ^OutputStream sink)
-         (.create writer ^Schema schema (io/file sink)))
+       (.create writer ^Schema schema ^OutputStream sink)
        writer)))
 
 (defmacro ^:private encoder-factory
