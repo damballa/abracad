@@ -189,7 +189,7 @@ These are the early days.  Still to be done:
 
 ## License
 
-Copyright © 2013 Damballa Inc.
+Copyright © 2013-2014 Damballa Inc.
 
 Distributed under your choice of the Eclipse Public License or the
 Apache License, Version 2.0.
