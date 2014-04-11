@@ -1,6 +1,6 @@
 (ns abracad.avro
   "Functions for de/serializing data with Avro."
-  (:refer-clojure :exclude [compare])
+  (:refer-clojure :exclude [compare spit slurp])
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
@@ -265,6 +265,33 @@ via `encode`."
 (defn compare
   "Compare `x` and `y` according to `schema`."
   [schema x y] (.compare (ClojureData/get) x y ^Schema schema))
+
+(defn spit
+  "Like core `spit`, but emits `content` to `f` as Avro with `schema`."
+  [schema f content & opts]
+  (let [codec (get opts :codec "snappy")]
+    (with-open [dfw (data-file-writer codec schema f)]
+      (.append dfw content))))
+
+(defn slurp
+  "Like core `slurp`, but reads Avro content from `f`."
+  [f & opts]
+  (with-open [dfr (data-file-reader f)]
+    (.next dfr)))
+
+(defn mspit
+  "Like Avro `spit`, but emits `content` as a sequence of records."
+  [schema f content & opts]
+  (let [codec (get opts :codec "snappy")]
+    (with-open [dfw (data-file-writer codec schema f)]
+      (doseq [record content]
+        (.append dfw record)))))
+
+(defn mslurp
+  "Like Avro `slurp`, but produces a sequence of records."
+  [f & opts]
+  (with-open [dfr (data-file-reader f)]
+    (into [] dfr)))
 
 (defprotocol AvroSerializable
   "Protocol for customizing Avro serialization."

@@ -1,6 +1,7 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer :all]
-            [abracad.avro :as avro])
+            [abracad.avro :as avro]
+            [clojure.java.io :as io])
   (:import [java.io ByteArrayOutputStream]
            [java.net InetAddress]))
 
@@ -215,3 +216,19 @@
     (is (not= schema1 schema3))
     (is (= "ascending" (get-in schema3 [:fields 0 :order] "ascending")))
     (is (= "ignore" (get-in schema3 [:fields 1 :order] "ascending")))))
+
+(deftest test-spit-slurp
+  (let [path "tmp/spit-slurp.avro"
+        schema {:type :array, :items 'long}
+        records [0 1 2 3 4 5]]
+    (io/make-parents path)
+    (avro/spit schema path records)
+    (is (= records (avro/slurp path)))))
+
+(deftest test-mspit-mslurp
+  (let [path "tmp/spit-slurp.avro"
+        schema 'long
+        records [0 1 2 3 4 5]]
+    (io/make-parents path)
+    (avro/mspit schema path records)
+    (is (= records (avro/mslurp path)))))
