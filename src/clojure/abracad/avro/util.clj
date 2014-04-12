@@ -48,7 +48,15 @@ evaluated at macro-expansion time."
   [bindings then else]
   `(if-let ~bindings ~else ~then))
 
+(defn ^:private coerce*
+  "Type-hinted form for inline `coerce`."
+  [c f x]
+  (let [y (vary-meta (gensym) assoc :tag c)]
+    `(let [x# ~x, ~y (if (instance? ~c x#) x# (~f x#))]
+       ~y)))
+
 (defn coerce
   "Coerce `x` to be of class `c` by applying `f` to it iff `x` isn't
 already an instance of `c`."
+  {:inline (identity coerce*), :inline-arities #{3}}
   [c f x] (if (instance? c x) x (f x)))

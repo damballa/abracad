@@ -184,7 +184,7 @@ a (binary-encoding) Decoder may be opened."
   [schema source]
   (let [reader (coerce DatumReader datum-reader schema)
         decoder (coerce Decoder binary-decoder source)]
-    (.read ^DatumReader reader nil ^Decoder decoder)))
+    (.read reader nil decoder)))
 
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
@@ -195,7 +195,7 @@ decoded serially from `source`."
     ((fn step []
        (lazy-seq
         (try
-          (let [record (.read ^DatumReader reader nil ^Decoder decoder)]
+          (let [record (.read reader nil decoder)]
             (cons record (step)))
           (catch EOFException _ nil)))))))
 
@@ -217,12 +217,12 @@ decoded serially from `source`."
   ([schema sink]
      (data-file-writer nil schema sink))
   ([codec schema sink]
-     (let [^DataFileWriter writer (data-file-writer)
+     (let [^DataFileWriter dfw (data-file-writer)
            sink (coerce OutputStream io/output-stream sink)
            schema (parse-schema schema)]
-       (when codec (.setCodec writer (codec-for codec)))
-       (.create writer schema ^OutputStream sink)
-       writer)))
+       (when codec (.setCodec dfw (codec-for codec)))
+       (.create dfw schema sink)
+       dfw)))
 
 (defmacro ^:private encoder-factory
   "Invoke static methods of default Avro Encoder factory."
@@ -250,8 +250,8 @@ decoded serially from `source`."
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
   [schema sink & records]
-  (let [^DatumWriter writer (coerce DatumWriter datum-writer schema)
-        ^Encoder encoder (coerce Encoder binary-encoder sink)]
+  (let [writer (coerce DatumWriter datum-writer schema)
+        encoder (coerce Encoder binary-encoder sink)]
     (doseq [record records]
       (.write writer record encoder))
     (.flush encoder)))
