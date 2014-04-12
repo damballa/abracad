@@ -11,7 +11,7 @@
   :javac-options ["-target" "1.6" "-source" "1.6"]
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.apache.avro/avro "1.7.5"]
-                 [cheshire/cheshire "5.2.0"]]
+                 [cheshire/cheshire "5.3.1"]]
   :plugins [[codox/codox "0.6.4"]]
   :codox {:include [abracad.avro abracad.avro.edn]}
   :aliases {"test-all" ["with-profile" ~(str "clojure-1-4:"
