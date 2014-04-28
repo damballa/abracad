@@ -50,7 +50,7 @@ write(Schema schema, Object datum, Encoder out) throws IOException {
         default: super.write(schema, datum, out); break;
         }
     } catch (NullPointerException e) {
-        throw super. npe(e, " of " + schema.getFullName());
+        throw super.npe(e, " of " + schema.getFullName());
     }
 }
 
