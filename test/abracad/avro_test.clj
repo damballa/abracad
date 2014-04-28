@@ -122,6 +122,15 @@
         thawed (avro/decode-seq schema bytes)]
     (is (= records thawed))))
 
+(deftest test-arrays-primitive
+  (let [schema (avro/parse-schema
+                {:type 'array, :items 'int, :abracad.array 'ints})
+        records [(int-array []) (int-array [0 1]) (int-array (range 1024))]
+        bytes (apply avro/binary-encoded schema records)
+        thawed (avro/decode-seq schema bytes)]
+    (is (= (map class records) (map class thawed)))
+    (is (= (map seq records) (map seq thawed)))))
+
 (deftest test-maps
   (let [schema (avro/parse-schema {:type :map, :values :long})
         records [{}

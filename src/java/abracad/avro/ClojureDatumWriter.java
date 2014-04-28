@@ -18,6 +18,7 @@ private static class Vars {
 
     private static final Var writeRecord = RT.var(NS, "write-record");
     private static final Var writeEnum = RT.var(NS, "write-enum");
+    private static final Var writeArray = RT.var(NS, "write-array");
     private static final Var resolveUnion = RT.var(NS, "resolve-union");
     private static final Var writeBytes = RT.var(NS, "write-bytes");
     private static final Var writeFixed = RT.var(NS, "write-fixed");
@@ -66,6 +67,13 @@ protected void
 writeEnum(Schema schema, Object datum, Encoder out)
         throws IOException {
     Vars.writeEnum.invoke(this, schema, datum, out);
+}
+
+@Override
+protected void
+writeArray(Schema schema, Object datum, Encoder out)
+        throws IOException {
+    Vars.writeArray.invoke(this, schema, datum, out);
 }
 
 @Override
