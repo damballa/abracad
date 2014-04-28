@@ -11,7 +11,7 @@
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
            [org.apache.avro.generic GenericRecord]
-           [abracad.avro ClojureDatumWriter]))
+           [abracad.avro ClojureDatumWriter ArrayAccessor]))
 
 (def ^:const edn-element
   "abracad.avro.edn.Element")
@@ -135,6 +135,27 @@ record serialization."
 (defn write-enum
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (.writeEnum out (.getEnumOrdinal schema (-> datum name mangle))))
+
+(defn array-prim?
+  [datum]
+  (let [cls (class datum)]
+    (and (-> cls .isArray)
+         (-> cls .getComponentType .isPrimitive))))
+
+(defn write-array-seq
+  [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
+  (.setItemCount out (count datum))
+  (doseq [datum datum]
+    (.write writer schema datum out)))
+
+(defn write-array
+  [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
+  (let [schema (.getElementType schema)]
+    (.writeArrayStart out)
+    (if (array-prim? datum)
+      (ArrayAccessor/writeArray datum out)
+      (write-array-seq writer schema datum out))
+    (.writeArrayEnd out)))
 
 (defn schema-name-type
   [datum]

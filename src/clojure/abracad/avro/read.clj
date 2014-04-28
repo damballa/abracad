@@ -6,7 +6,7 @@
              :refer [mangle unmangle field-keyword if-not-let]])
   (:import [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]
-           [abracad.avro ClojureDatumReader]))
+           [abracad.avro ClojureDatumReader ArrayAccessor]))
 
 (defn schema-symbol
   [^Schema schema]
@@ -56,17 +56,32 @@ schema name symbol `rname`."
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
   (-> expected .getEnumSymbols (.get (.readEnum in)) unmangle keyword))
 
+(defn read-array-vector
+  [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in ^long n]
+  (if-not (pos? n)
+    []
+    (persistent!
+     (loop [m (transient []), n (long n)]
+       (let [m (conj! m (.read reader nil expected in)), n (dec n)]
+         (if-not (pos? n)
+           (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
+           (recur m n)))))))
+
 (defn read-array
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
-  (let [vtype (.getElementType expected), n (.readArrayStart in)]
-    (if-not (pos? n)
-      []
-      (persistent!
-       (loop [m (transient []), n (long n)]
-         (let [m (conj! m (.read reader nil vtype in)), n (dec n)]
-           (if-not (pos? n)
-             (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
-             (recur m n))))))))
+  (let [etype (.getElementType expected)
+        atype (.getProp expected "abracad.array")
+        n (.readArrayStart in)]
+    (if (or (nil? atype) (= atype "vector"))
+      (read-array-vector reader etype in n)
+      (case atype
+        "booleans" (ArrayAccessor/readArray (boolean-array n) n in)
+        "shorts" (ArrayAccessor/readArray (short-array n) n in)
+        "chars" (ArrayAccessor/readArray (char-array n) n in)
+        "ints" (ArrayAccessor/readArray (int-array n) n in)
+        "longs" (ArrayAccessor/readArray (long-array n) n in)
+        "floats" (ArrayAccessor/readArray (float-array n) n in)
+        "doubles" (ArrayAccessor/readArray (double-array n) n in)))))
 
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
