@@ -242,7 +242,7 @@ decoded serially from `source`."
   "Return a JSON-encoding encoder for `sink` using `schema`."
   {:tag `Encoder}
   [schema sink]
-  (let [schema (parse-schema schema?)]
+  (let [schema (parse-schema schema)]
     (encoder-factory jsonEncoder schema ^OutputStream sink)))
 
 (defn encode
