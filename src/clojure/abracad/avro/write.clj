@@ -146,6 +146,7 @@ record serialization."
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
   (.setItemCount out (count datum))
   (doseq [datum datum]
+    (.startItem out)
     (.write writer schema datum out)))
 
 (defn write-array

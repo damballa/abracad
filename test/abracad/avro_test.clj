@@ -5,10 +5,22 @@
   (:import [java.io ByteArrayOutputStream]
            [java.net InetAddress]))
 
-(defn roundtrip
+(defn roundtrip-binary
   [schema & records]
   (->> (apply avro/binary-encoded schema records)
        (avro/decode-seq schema)))
+
+(defn roundtrip-json
+  [schema & records]
+  (->> (apply avro/json-encoded schema records)
+       (avro/json-decoder schema)
+       (avro/decode-seq schema)))
+
+(defn roundtrips?
+  ([schema input] (roundtrips? schema input input))
+  ([schema expected input]
+     (and (= expected (apply roundtrip-binary schema input))
+          (= expected (apply roundtrip-json schema input)))))
 
 (defrecord Example [foo-foo bar])
 
@@ -36,14 +48,12 @@
                                   :name 'SubExample
                                   :fields [{:name "baz",
                                             :type :long}]}]}]}
-        record (->Example "bar" (->SubExample 0))
-        bytes (avro/binary-encoded schema record)]
-    (is (= {:foo-foo "bar" :bar {:baz 0}}
-           (avro/decode schema bytes)))
+        records [(->Example "bar" (->SubExample 0))]]
+    (is (roundtrips? schema [{:foo-foo "bar" :bar {:baz 0}}] records))
     (binding [avro/*avro-readers*
-            {'abracad.core-test/Example #'->Example
-             'abracad.core-test/SubExample #'->SubExample}]
-      (is (= record (avro/decode schema bytes))))))
+              , {'abracad.core-test/Example #'->Example
+                 'abracad.core-test/SubExample #'->SubExample}]
+      (is (roundtrips? schema records)))))
 
 (deftest test-customized
   (let [schema (avro/parse-schema
@@ -53,45 +63,44 @@
                            :type [{:type :fixed, :name "IPv4", :size 4}
                                   {:type :fixed, :name "IPv6", :size 16}]}]})
         records [(InetAddress/getByName "8.8.8.8")
-                 (InetAddress/getByName "8::8")]
-        bytes (apply avro/binary-encoded schema records)]
+                 (InetAddress/getByName "8::8")]]
     (binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
-      (is (= records (doall (avro/decode-seq schema bytes)))))))
+      (is (roundtrips? schema records)))))
 
 (deftest test-int
   (let [schema (avro/parse-schema 'int)]
-    (is (= [12345] (roundtrip schema (int 12345))))
-    (is (= [12345] (roundtrip schema (long 12345))))
-    (is (= [12345] (roundtrip schema (float 12345))))
-    (is (= [12345] (roundtrip schema (double 12345))))))
+    (is (roundtrips? schema [12345] [(int 12345)]))
+    (is (roundtrips? schema [12345] [(long 12345)]))
+    (is (roundtrips? schema [12345] [(float 12345)]))
+    (is (roundtrips? schema [12345] [(double 12345)]))))
 
 (deftest test-long
   (let [schema (avro/parse-schema 'long)]
-    (is (= [12345] (roundtrip schema (int 12345))))
-    (is (= [12345] (roundtrip schema (long 12345))))
-    (is (= [12345] (roundtrip schema (float 12345))))
-    (is (= [12345] (roundtrip schema (double 12345))))))
+    (is (roundtrips? schema [12345] [(int 12345)]))
+    (is (roundtrips? schema [12345] [(long 12345)]))
+    (is (roundtrips? schema [12345] [(float 12345)]))
+    (is (roundtrips? schema [12345] [(double 12345)]))))
 
 (deftest test-float
   (let [schema (avro/parse-schema 'float)]
-    (is (= [12345.0] (roundtrip schema (int 12345))))
-    (is (= [12345.0] (roundtrip schema (long 12345))))
-    (is (= [12345.0] (roundtrip schema (float 12345))))
-    (is (= [12345.0] (roundtrip schema (double 12345))))))
+    (is (roundtrips? schema [12345.0] [(int 12345)]))
+    (is (roundtrips? schema [12345.0] [(long 12345)]))
+    (is (roundtrips? schema [12345.0] [(float 12345)]))
+    (is (roundtrips? schema [12345.0] [(double 12345)]))))
 
 (deftest test-double
   (let [schema (avro/parse-schema 'double)]
-    (is (= [12345.0] (roundtrip schema (int 12345))))
-    (is (= [12345.0] (roundtrip schema (long 12345))))
-    (is (= [12345.0] (roundtrip schema (float 12345))))
-    (is (= [12345.0] (roundtrip schema (double 12345))))))
+    (is (roundtrips? schema [12345.0] [(int 12345)]))
+    (is (roundtrips? schema [12345.0] [(long 12345)]))
+    (is (roundtrips? schema [12345.0] [(float 12345)]))
+    (is (roundtrips? schema [12345.0] [(double 12345)]))))
 
 (deftest test-boolean
   (let [schema (avro/parse-schema 'boolean)]
-    (is (= [true] (roundtrip schema :anything)))
-    (is (= [true] (roundtrip schema true)))
-    (is (= [false] (roundtrip schema false)))
-    (is (= [false] (roundtrip schema nil)))))
+    (is (roundtrips? schema [true] [:anything]))
+    (is (roundtrips? schema [true] [true]))
+    (is (roundtrips? schema [false] [false]))
+    (is (roundtrips? schema [false] [nil]))))
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}
@@ -100,9 +109,8 @@
         schema (avro/parse-schema
                 vertical horizontal
                 [:null :long :string "vertical" "horizontal"])
-        records ["down" :up :down :left 0 :right "left"]
-        bytes (apply avro/binary-encoded schema records)]
-    (is (= records (avro/decode-seq schema bytes)))))
+        records ["down" :up :down :left 0 :right "left"]]
+    (is (roundtrips? schema records))))
 
 (deftest test-bytes
   (let [schema (avro/parse-schema
@@ -111,25 +119,24 @@
                  (byte-array (map byte [1 2]))]
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
+    ;; Only testing binary, as JSON encoding does *not* round-trip :-(
     (is (= 6 (alength ^bytes bytes)))
     (is (every? (partial instance? (Class/forName "[B")) thawed))
     (is (= (map seq records) (map seq thawed)))))
 
 (deftest test-arrays
   (let [schema (avro/parse-schema {:type :array, :items :long})
-        records [[] [0 1] (range 1024)]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+        records [[] [0 1] (range 1024)]]
+    (is (roundtrips? schema records))))
 
 (deftest test-arrays-primitive
   (let [schema (avro/parse-schema
                 {:type 'array, :items 'int, :abracad.array 'ints})
         records [(int-array []) (int-array [0 1]) (int-array (range 1024))]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= (map class records) (map class thawed)))
-    (is (= (map seq records) (map seq thawed)))))
+        thawed-b (apply roundtrip-binary schema records)
+        thawed-j (apply roundtrip-json schema records)]
+    (is (= (map class records) (map class thawed-b)))
+    (is (= (map seq records) (map seq thawed-j)))))
 
 (deftest test-maps
   (let [schema (avro/parse-schema {:type :map, :values :long})
@@ -137,26 +144,17 @@
                  {"foo" 0, "bar" 1}
                  (->> (range 1024)
                       (map #(-> [(str %) %]))
-                      (into {}))]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+                      (into {}))]]
+    (is (roundtrips? schema records))))
 
 (deftest test-extra
   (let [schema (avro/parse-schema
                 {:name "Example", :type "record",
                  :fields [{:name "foo", :type "long"}]})]
     (is (thrown? clojure.lang.ExceptionInfo
-          (->> {:foo 0, :bar 1}
-               (avro/binary-encoded schema))))
-    (is (= {:foo 0}
-           (->> ^{:type 'Example} {:foo 0, :bar 1}
-                (avro/binary-encoded schema)
-                (avro/decode schema))))
-    (is (= {:foo 0}
-           (->> ^:avro/unchecked {:foo 0, :bar 1}
-                (avro/binary-encoded schema)
-                (avro/decode schema))))))
+          (roundtrips? schema [{:foo 0}] [{:foo 0, :bar 1}])))
+    (is (roundtrips? schema [{:foo 0}] [^{:type 'Example} {:foo 0, :bar 1}]))
+    (is (roundtrips? schema [{:foo 0}] [^:avro/unchecked {:foo 0, :bar 1}]))))
 
 (deftest test-positional
   (let [schema (avro/parse-schema
@@ -166,10 +164,12 @@
                           {:name "right", :type "string"}]}
                 ["Example" "string"])
         records [[0 "foo"] [1 "bar"] [2 "baz"] "quux"]
+        [record] records
         bytes (apply avro/binary-encoded schema records)
         thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))
-    (is (= 'Example (-> thawed first type)))))
+    (is (roundtrips? schema records))
+    (is (= ['Example] (map type (roundtrip-binary schema record))))
+    (is (= ['Example] (map type (roundtrip-json schema record))))))
 
 (deftest test-mangle-union
   (let [schema (avro/parse-schema
@@ -177,10 +177,8 @@
                  :abracad.reader "vector"
                  :fields [{:name "field0", :type "long"}]}
                 ["mangle-me" "long"])
-        records [0 [1] [2] 3 4 [5]]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+        records [0 [1] [2] 3 4 [5]]]
+    (is (roundtrips? schema records))))
 
 (deftest test-mangle-sub-schema
   (let [schema1 (avro/parse-schema
@@ -188,10 +186,8 @@
                   :abracad.reader "vector"
                   :fields [{:name "field0", :type "long"}]})
         schema (avro/parse-schema [schema1 "long"])
-        records [0 [1] [2] 3 4 [5]]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+        records [0 [1] [2] 3 4 [5]]]
+    (is (roundtrips? schema records))))
 
 (deftest test-sub-types
   (let [schema1 (avro/parse-schema
@@ -202,19 +198,15 @@
                   :abracad.reader "vector"
                   :fields [{:name "field0", :type "Example0"}]})
         schema (avro/parse-schema schema1 "Example0")
-        records [[0] [1] [2] [3] [4] [5]]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+        records [[0] [1] [2] [3] [4] [5]]]
+    (is (roundtrips? schema records))))
 
 (deftest test-tuple-schema
   (let [schema1 (avro/tuple-schema ["string" "long" "long"])
         schema2 (avro/tuple-schema ["long" schema1])
         schema (avro/parse-schema schema2)
-        records [[0 ["foo" 1 2]] [3 ["bar" 4 5]]]
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
-    (is (= records thawed))))
+        records [[0 ["foo" 1 2]] [3 ["bar" 4 5]]]]
+    (is (roundtrips? schema records))))
 
 (deftest test-grouping-schema
   (let [schema1 (avro/unparse-schema (avro/tuple-schema ["string" "long"]))
