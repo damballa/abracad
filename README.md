@@ -189,6 +189,7 @@ These are the early days.  Still to be done:
 
   - Kick the tires on the interface.  There may be glaring holes.
   - Write more exhaustive tests, to cover the full range of types.
+  - Figure out a cleaner way of handling `_` vs `-`.
   - Dynamically generate schema-specific datum reader/writer
     implementations.  All the speed of generating & compiling
     de/serialization classes from schemas, but with none of the
