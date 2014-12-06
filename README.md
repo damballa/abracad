@@ -75,8 +75,15 @@ The Avro type deserialization mappings are as follows:
   - Maps deserialize as persistent maps
   - Fixed values currently always deserialize as primitive byte arrays
   - Bytes values currently always deserialize as primitive byte arrays
-  - Records deserialize as maps with keyword field names and `:type`
-    metadata indicating the Avro schema name
+  - Records deserialize as maps with keyword field names and `:type` metadata
+    indicating the Avro schema name
+
+The Avro specification allows field names to contain the `_` character but
+disallows the `-` character.  Clojure keywords frequently contain `-` but rarely
+contain `_`.  Abracad attempts to work around this difference by mapping `_` in
+Avro field names to `-` in Clojure symbols and vice-versa.  The current
+implementation of this conversion does *not* handle keywords containing `_`
+instead, which is probably a bug.
 
 #### Record de/serialization tweaking
 
