@@ -3,7 +3,9 @@
             [abracad.avro :as avro]
             [clojure.java.io :as io])
   (:import [java.io ByteArrayOutputStream]
-           [java.net InetAddress]))
+           [java.net InetAddress]
+           [org.apache.avro SchemaParseException]
+           [clojure.lang ExceptionInfo]))
 
 (defn roundtrip-binary
   [schema & records]
@@ -193,13 +195,33 @@
     (is (roundtrips? schema records))))
 
 (deftest test-mangle-sub-schema
-  (let [schema1 (avro/parse-schema
-                 {:name "mangle-me", :type "record",
-                  :abracad.reader "vector"
-                  :fields [{:name "field0", :type "long"}]})
+  (let [schema-def {:name "mangle-me", :type "record",
+                    :abracad.reader "vector"
+                    :fields [{:name "field0", :type "long"}]}
+        schema1 (avro/parse-schema schema-def)
         schema (avro/parse-schema [schema1 "long"])
         records [0 [1] [2] 3 4 [5]]]
-    (is (roundtrips? schema records))))
+    (is (roundtrips? schema records))
+    (is (= "mangle_me"
+          (-> schema1 avro/unparse-schema :name)))
+    (is (thrown? SchemaParseException
+          (binding [abracad.avro.util/*mangle-names* false]
+            (avro/parse-schema schema-def))))))
+
+(deftest test-mangling
+  (let [schema (avro/parse-schema
+                 {:name "mangling", :type "record",
+                  :fields [{:name "a-dash", :type "long"}]})
+        dash-data [{:a-dash 1}]
+        under-data [{:a_dash 1}]]
+    (is (roundtrips? schema dash-data))
+    (is (thrown-with-msg? ExceptionInfo #"Cannot write datum as schema"
+          (binding [abracad.avro.util/*mangle-names* false]
+            (roundtrips? schema dash-data))))
+    (is (thrown-with-msg? ExceptionInfo #"Cannot write datum as schema"
+          (roundtrips? schema under-data)))
+    (is (binding [abracad.avro.util/*mangle-names* false]
+          (roundtrips? schema under-data)))))
 
 (deftest test-sub-types
   (let [schema1 (avro/parse-schema

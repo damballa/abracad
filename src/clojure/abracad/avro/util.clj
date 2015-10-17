@@ -3,6 +3,11 @@
   {:private true}
   (:import [org.apache.avro Schema$Field]))
 
+(def ^:dynamic *mangle-names*
+  "If set to false, schemas or data will not be mangled during a parse or
+de/serialization phases"
+  true)
+
 (defmacro returning
   "Evaluates the result of expr, then evaluates the forms in body (presumably
 for side-effects), then returns the result of expr."
@@ -33,11 +38,11 @@ evaluated at macro-expansion time."
 
 (defn mangle
   "Perform reversible Clojure->Avro name-mangling."
-  [^String n] (.replace n \- \_))
+  [^String n] (if *mangle-names* (.replace n \- \_) n))
 
 (defn unmangle
   "Reverse Clojure->Avro name-mangling."
-  [^String n] (.replace n \_ \-))
+  [^String n] (if *mangle-names* (.replace n \_ \-) n))
 
 (defn field-keyword
   "Keyword for Avro schema field."
