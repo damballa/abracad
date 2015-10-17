@@ -83,7 +83,8 @@ disallows the `-` character.  Clojure keywords frequently contain `-` but rarely
 contain `_`.  Abracad attempts to work around this difference by mapping `_` in
 Avro field names to `-` in Clojure symbols and vice-versa.  The current
 implementation of this conversion does *not* handle keywords containing `_`
-instead, which is probably a bug.
+instead, which is probably a bug.  This mangling may be disabled by binding
+`abracad.avro.util/*mangle-names*` to `false`.
 
 #### Record de/serialization tweaking
 
@@ -197,7 +198,7 @@ These are the early days.  Still to be done:
 
 ## License
 
-Copyright © 2013-2014 Damballa Inc.
+Copyright © 2013-2015 Damballa Inc. and contributors.
 
 Distributed under your choice of the Eclipse Public License or the
 Apache License, Version 2.0.

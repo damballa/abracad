@@ -1,11 +1,10 @@
 (ns abracad.avro.util
   "Internal utility functions."
-  {:private true}
   (:import [org.apache.avro Schema$Field]))
 
 (def ^:dynamic *mangle-names*
-  "If set to false, schemas or data will not be mangled during a parse or
-de/serialization phases"
+  "When true, record field names will be mangled during schema parse and
+record de/serialization.  Default value is `true`."
   true)
 
 (defmacro returning
@@ -37,11 +36,11 @@ evaluated at macro-expansion time."
           (list (last clauses))))))
 
 (defn mangle
-  "Perform reversible Clojure->Avro name-mangling."
+  "Perform Clojure->Avro name-mangling when `*mangle-names*` is true."
   [^String n] (if *mangle-names* (.replace n \- \_) n))
 
 (defn unmangle
-  "Reverse Clojure->Avro name-mangling."
+  "Reverse Clojure->Avro name-mangling when `*mangle-names* is true."
   [^String n] (if *mangle-names* (.replace n \_ \-) n))
 
 (defn field-keyword
