@@ -8,22 +8,19 @@
   :global-vars {*warn-on-reflection* true}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
-  :javac-options ["-target" "1.6" "-source" "1.6"]
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :javac-options ["-target" "1.7" "-source" "1.7"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.apache.avro/avro "1.7.7"]
                  [cheshire/cheshire "5.3.1"]]
   :plugins [[codox/codox "0.6.4"]]
   :codox {:include [abracad.avro abracad.avro.edn]}
-  :aliases {"test-all" ["with-profile" ~(str "clojure-1-4:"
-                                             "clojure-1-5:"
+  :aliases {"test-all" ["with-profile" ~(str "clojure-1-5:"
                                              "clojure-1-6:"
                                              "clojure-1-7")
                         ,              "test"]}
-  :profiles {:clojure-1-4 {:dependencies
-                           [[org.clojure/clojure "1.4.0"]]}
-             :clojure-1-5 {:dependencies
+  :profiles {:clojure-1-5 {:dependencies
                            [[org.clojure/clojure "1.5.1"]]}
              :clojure-1-6 {:dependencies
                            [[org.clojure/clojure "1.6.0"]]}
              :clojure-1-7 {:dependencies
-                           [[org.clojure/clojure "1.7.0-alpha4"]]}})
+                           [[org.clojure/clojure "1.7.0"]]}})
