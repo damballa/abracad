@@ -11,7 +11,7 @@
            [clojure.lang Named]
            [org.apache.avro Schema Schema$Parser Schema$Type]
            [org.apache.avro.file
-             CodecFactory DataFileWriter DataFileReader SeekableInput
+             CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
              SeekableFileInput SeekableByteArrayInput]
            [org.apache.avro.io
              DatumReader DatumWriter Decoder DecoderFactory
@@ -146,6 +146,14 @@ but the first `n` fields when sorting."
   ([expected source]
      (DataFileReader/openReader
       (seekable-input source) (datum-reader expected))))
+
+(defn data-file-stream
+  "Return an Avro DataFileStream which produces Clojure data structures."
+  {:tag `DataFileStream}
+  ([source] (data-file-stream nil source))
+  ([expected source]
+     (DataFileStream.
+       (io/input-stream source) (datum-reader expected))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
