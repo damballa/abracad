@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
             [clojure.java.io :as io])
-  (:import [java.io ByteArrayOutputStream]
+  (:import [java.io ByteArrayOutputStream FileInputStream]
            [java.net InetAddress]
            [org.apache.avro SchemaParseException]
            [clojure.lang ExceptionInfo]))
@@ -266,3 +266,12 @@
     (io/make-parents path)
     (avro/mspit schema path records)
     (is (= records (avro/mslurp path)))))
+
+(deftest test-data-file-stream
+  (let [path "tmp/data-file-stream.avro"
+        schema {:type :long}
+        records [0 1 2 3 4 5]]
+    (io/make-parents path)
+    (avro/mspit schema path records)
+    (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
+      (is (= records (seq dfs))))))
