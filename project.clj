@@ -1,4 +1,4 @@
-(defproject com.damballa/abracad "0.4.14-alpha2"
+(defproject com.damballa/abracad "0.4.14-SNAPSHOT"
   :description "De/serialize Clojure data structures with Avro."
   :url "http://github.com/damballa/abracad"
   :licenses [{:name "Eclipse Public License"
