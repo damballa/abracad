@@ -4,7 +4,8 @@
   (:require [abracad.avro :as avro]
             [abracad.avro.util
              :refer [mangle unmangle field-keyword if-not-let]])
-  (:import [org.apache.avro Schema Schema$Field]
+  (:import [clojure.lang Var]
+           [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]
            [abracad.avro ClojureDatumReader ArrayAccessor]))
 
@@ -105,3 +106,10 @@ schema name symbol `rname`."
 (defn read-bytes
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
   (.array (.readBytes in nil)))
+
+;; Load namespaces in order to ensure Avro reader vars are available
+(doseq [ns (->> (vals avro/*avro-readers*)
+                (map #(-> ^Var % .-ns .-name))
+                (distinct)
+                (sort))]
+  (require ns))
