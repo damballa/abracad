@@ -14,14 +14,11 @@
                  [cheshire/cheshire "5.6.1"]]
   :plugins [[codox/codox "0.6.4"]]
   :codox {:include [abracad.avro abracad.avro.edn]}
-  :aliases {"test-all" ["with-profile" ~(str "clojure-1-5:"
-                                             "clojure-1-6:"
+  :aliases {"test-all" ["with-profile" ~(str "clojure-1-6:"
                                              "clojure-1-7:"
                                              "clojure-1-8")
                         "test"]}
-  :profiles {:clojure-1-5 {:dependencies
-                           [[org.clojure/clojure "1.5.1"]]}
-             :clojure-1-6 {:dependencies
+  :profiles {:clojure-1-6 {:dependencies
                            [[org.clojure/clojure "1.6.0"]]}
              :clojure-1-7 {:dependencies
                            [[org.clojure/clojure "1.7.0"]]}
