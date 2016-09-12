@@ -200,7 +200,7 @@ record serialization."
   GenericRecord
   (schema-name [this] (-> this .getSchema .getFullName))
   (field-get [this field] (.get this (name field)))
-  (filed-list [this] (->> this .getSchema .getFields (map field-name) set))
+  (field-list [this] (->> this .getSchema .getFields (map field-name) set))
 
   Object
   (schema-name [this] (schema-name-type this))
