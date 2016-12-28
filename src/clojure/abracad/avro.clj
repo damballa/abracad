@@ -342,7 +342,11 @@ value as the deserialization result."
           (.getResources "avro_readers.clj"))))
 
 (defn ^:private avro-reader-var
-  [sym] (intern (create-ns (symbol (namespace sym))) (symbol (name sym))))
+  [sym]
+  (let [ns (symbol (namespace sym))
+        n (symbol (name sym))]
+    (require ns)
+    (intern ns n)))
 
 (defn ^:private load-avro-reader-file
   [mappings ^java.net.URL url]
