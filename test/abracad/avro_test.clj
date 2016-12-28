@@ -10,6 +10,9 @@
 (defn roundtrip-binary
   [schema & records]
   (->> (apply avro/binary-encoded schema records)
+       (avro/decode-seq schema)
+       (apply avro/json-encoded schema)
+       (avro/json-decoder schema)
        (avro/decode-seq schema)))
 
 (defn roundtrip-json
