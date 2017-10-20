@@ -4,7 +4,8 @@
   (:require [abracad.avro :as avro]
             [abracad.avro.edn :as edn]
             [abracad.avro.util :refer [case-expr case-enum mangle unmangle
-                                       field-keyword]])
+                                       field-keyword]]
+            [clojure.math.numeric-tower :refer [abs]])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
@@ -207,13 +208,17 @@ record serialization."
   (field-get [this field] (get this field))
   (field-list [this] (keys this)))
 
-(defn avro-record?
+(defn avro-record-score
   [^Schema schema datum]
-  (or (and (vector? datum)
-           (= (count datum) (-> schema .getFields count)))
-      (and (map? datum)
-           (every? (->> schema .getFields (map field-keyword) set)
-                   (avro/field-list datum)))))
+  (cond
+    (vector? datum) (abs (- (count datum)
+                            (-> schema .getFields count)))
+    (map? datum) (let [schema-fields (->> schema .getFields (map field-keyword) set)
+                       datum-fields (avro/field-list datum)]
+                   (if (clojure.set/subset? datum-fields schema-fields)
+                     (count (clojure.set/difference schema-fields datum-fields))
+                     Integer/MAX_VALUE))
+    :else Integer/MAX_VALUE))
 
 (defn avro-enum?
   [^Schema schema datum]
@@ -229,31 +234,41 @@ record serialization."
   (and (avro-bytes? schema datum)
        (= (.getFixedSize schema) (count-bytes datum))))
 
-(defn schema-match?
+(defn to-score
+  [x]
+  (if (instance? Boolean x)
+    (if x 0 Integer/MAX_VALUE)
+    x))
+
+(defn schema-match-score
   [^Schema schema datum]
-  (case-enum (.getType schema)
-    Schema$Type/RECORD  (avro-record? schema datum)
-    Schema$Type/ENUM    (avro-enum? schema datum)
-    Schema$Type/FIXED   (avro-fixed? schema datum)
-    Schema$Type/BYTES   (avro-bytes? schema datum)
-    Schema$Type/LONG    (integer? datum)
-    Schema$Type/INT     (integer? datum)
-    Schema$Type/DOUBLE  (float? datum)
-    Schema$Type/FLOAT   (float? datum)
-    #_ else             false))
+  (-> schema
+      (.getType)
+      (case-enum Schema$Type/RECORD (avro-record-score schema datum)
+                 Schema$Type/ENUM (avro-enum? schema datum)
+                 Schema$Type/FIXED (avro-fixed? schema datum)
+                 Schema$Type/BYTES (avro-bytes? schema datum)
+                 Schema$Type/LONG (integer? datum)
+                 Schema$Type/INT (integer? datum)
+                 Schema$Type/DOUBLE (float? datum)
+                 Schema$Type/FLOAT (float? datum)
+                 #_else false)
+      (to-score)))
 
 (defn resolve-union*
   [^Schema schema ^Object datum]
   (let [n (if (element-union? schema)
             (edn/schema-name datum)
             (avro/schema-name datum))]
+
     (if-let [index (and n (.getIndexNamed schema n))]
       index
-      (loop [schemas (.getTypes schema), i (long 0)]
-        (if-let [[schema & schemas] (seq schemas)]
-          (if (schema-match? schema datum)
-            i
-            (recur schemas (inc i))))))))
+      (let [scores (sort
+                     (fn [[s1] [s2]] (< s1 s2))
+                     (map-indexed (fn [idx sch] [(schema-match-score sch datum) idx sch])
+                                  (.getTypes schema)))
+            winner (first scores)]
+        (second winner)))))
 
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]

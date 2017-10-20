@@ -10,6 +10,7 @@
   :java-source-paths ["src/java"]
   :javac-options ["-target" "1.7" "-source" "1.7"]
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/math.numeric-tower "0.0.4"]
                  [org.apache.avro/avro "1.8.0"]
                  [cheshire/cheshire "5.6.1"]]
   :plugins [[codox/codox "0.6.4"]]

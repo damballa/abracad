@@ -126,6 +126,33 @@
     (is (= '[example1 example2]
            (map (comp :type meta) records')))))
 
+(deftest test-union-record-subset-of-other-record
+  (let [example1 {:type :record, :name 'example1,
+                  :fields [{:name 'long, :type 'long}
+                           {:name 'string, :type 'string}]}
+        example2 {:type :record, :name 'example2,
+                  :fields [{:name 'string, :type 'string}]}
+        schema (avro/parse-schema [example1 example2])
+        records [{:long 0 :string "string"}
+                 {:string "string"}]
+        records' (apply roundtrip-binary schema records)]
+    (is (= records records'))
+    (is (= '[example1 example2]
+           (map (comp :type meta) records'))))
+
+  (let [example1 {:type :record, :name 'example1,
+                  :fields [{:name 'string, :type 'string}]}
+        example2 {:type :record, :name 'example2,
+                  :fields [{:name 'long, :type 'long}
+                           {:name 'string, :type 'string}]}
+        schema (avro/parse-schema [example1 example2])
+        records [{:long 0 :string "string"}
+                 {:string "string"}]
+        records' (apply roundtrip-binary schema records)]
+    (is (= records records'))
+    (is (= '[example2 example1]
+           (map (comp :type meta) records')))))
+
 (deftest test-bytes
   (let [schema (avro/parse-schema
                 [{:type :fixed, :name "foo", :size 1}, :bytes])
