@@ -215,10 +215,8 @@ record serialization."
                             (-> schema .getFields count)))
     (map? datum) (let [schema-fields (->> schema .getFields (map field-keyword) set)
                        datum-fields (avro/field-list datum)]
-                   (if (clojure.set/subset? datum-fields schema-fields)
-                     (count (clojure.set/difference schema-fields datum-fields))
-                     Integer/MAX_VALUE))
-    :else Integer/MAX_VALUE))
+                   (when (clojure.set/subset? datum-fields schema-fields)
+                     (count (clojure.set/difference schema-fields datum-fields))))))
 
 (defn avro-enum?
   [^Schema schema datum]
@@ -237,22 +235,23 @@ record serialization."
 (defn to-score
   [x]
   (if (instance? Boolean x)
-    (if x 0 Integer/MAX_VALUE)
+    (when x 0)
     x))
 
 (defn schema-match-score
   [^Schema schema datum]
   (-> schema
       (.getType)
-      (case-enum Schema$Type/RECORD (avro-record-score schema datum)
-                 Schema$Type/ENUM (avro-enum? schema datum)
-                 Schema$Type/FIXED (avro-fixed? schema datum)
-                 Schema$Type/BYTES (avro-bytes? schema datum)
-                 Schema$Type/LONG (integer? datum)
-                 Schema$Type/INT (integer? datum)
-                 Schema$Type/DOUBLE (float? datum)
-                 Schema$Type/FLOAT (float? datum)
-                 #_else false)
+      (case-enum
+        Schema$Type/RECORD (avro-record-score schema datum)
+        Schema$Type/ENUM (avro-enum? schema datum)
+        Schema$Type/FIXED (avro-fixed? schema datum)
+        Schema$Type/BYTES (avro-bytes? schema datum)
+        Schema$Type/LONG (integer? datum)
+        Schema$Type/INT (integer? datum)
+        Schema$Type/DOUBLE (float? datum)
+        Schema$Type/FLOAT (float? datum)
+        #_else false)
       (to-score)))
 
 (defn resolve-union*
@@ -263,11 +262,11 @@ record serialization."
 
     (if-let [index (and n (.getIndexNamed schema n))]
       index
-      (let [scores (sort
-                     (fn [[s1] [s2]] (< s1 s2))
-                     (map-indexed (fn [idx sch] [(schema-match-score sch datum) idx sch])
-                                  (.getTypes schema)))
-            winner (first scores)]
+      (let [winner (->> (.getTypes schema)
+                        (map-indexed (fn [idx sch] [(schema-match-score sch datum) idx]))
+                        (filter (fn [[s _]] (some? s)))
+                        (sort (fn [[s1] [s2]] (< s1 s2)))
+                        (first))]
         (second winner)))))
 
 (defn resolve-union
