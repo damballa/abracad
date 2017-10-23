@@ -5,7 +5,7 @@
             [abracad.avro.edn :as edn]
             [abracad.avro.util :refer [case-expr case-enum mangle unmangle
                                        field-keyword]]
-            [clojure.math.numeric-tower :refer [abs]])
+            [clojure.set])
   (:import [java.util Collection Map List]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
@@ -211,8 +211,7 @@ record serialization."
 (defn avro-record-score
   [^Schema schema datum]
   (cond
-    (vector? datum) (abs (- (count datum)
-                            (-> schema .getFields count)))
+    (vector? datum) (when (= (count datum) (-> schema .getFields count)) 0)
     (map? datum) (let [schema-fields (->> schema .getFields (map field-keyword) set)
                        datum-fields (avro/field-list datum)]
                    (when (clojure.set/subset? datum-fields schema-fields)
@@ -259,7 +258,6 @@ record serialization."
   (let [n (if (element-union? schema)
             (edn/schema-name datum)
             (avro/schema-name datum))]
-
     (if-let [index (and n (.getIndexNamed schema n))]
       index
       (let [winner (->> (.getTypes schema)

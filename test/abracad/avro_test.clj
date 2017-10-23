@@ -4,7 +4,7 @@
             [clojure.java.io :as io])
   (:import [java.io ByteArrayOutputStream FileInputStream]
            [java.net InetAddress]
-           [org.apache.avro SchemaParseException]
+           [org.apache.avro SchemaParseException UnresolvedUnionException]
            [clojure.lang ExceptionInfo]))
 
 (defn roundtrip-binary
@@ -133,7 +133,7 @@
                     :fields [{:name 'string, :type 'string}]}
           schema (avro/parse-schema [example1 example2])
           records [{:long 0 :string "string"}]]
-      (is (thrown? org.apache.avro.UnresolvedUnionException
+      (is (thrown? UnresolvedUnionException
                    (apply roundtrip-binary schema records)))))
 
   (testing "when multiple record types match, that with the fewest fields is chosen"
