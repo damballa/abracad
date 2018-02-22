@@ -1,10 +1,8 @@
 (ns abracad.avro.edn
   (:require [abracad.avro :as avro]
-            [abracad.avro.util :refer [coerce]])
-  (:import [clojure.lang BigInt Cons IMeta IPersistentList IPersistentMap
-             IPersistentSet IPersistentVector ISeq Keyword PersistentArrayMap
-             PersistentQueue Ratio Sorted Symbol]
-           [org.apache.avro Schema]))
+            [abracad.avro.util :as util])
+  (:import [clojure.lang BigInt IPersistentList IPersistentMap IPersistentSet
+            IPersistentVector ISeq Keyword PersistentQueue Ratio Sorted Symbol]))
 
 (defprotocol EDNAvroSerializable
   "Protocol for customizing EDN-in-Avro serialization."
@@ -229,7 +227,7 @@
 `schemas` (which should be compatible with `avro/parse-schema`) as
 additional allowed element types."
   [& schemas]
-  (let [schemas (mapcat (partial coerce IPersistentVector vector) schemas)]
+  (let [schemas (mapcat (partial util/coerce IPersistentVector vector) schemas)]
     (avro/parse-schema
      `{:type "record", :name "abracad.avro.edn.Element",
        :fields [{:name "value"

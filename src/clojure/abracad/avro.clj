@@ -1,22 +1,20 @@
 (ns abracad.avro
   "Functions for de/serializing data with Avro."
   (:refer-clojure :exclude [compare spit slurp])
-  (:require [clojure.java.io :as io]
-            [clojure.walk :refer [postwalk]]
+  (:require [abracad.avro.util :as util]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle coerce]])
-  (:import [java.io
-             ByteArrayInputStream ByteArrayOutputStream EOFException
-             File FileInputStream InputStream OutputStream]
+            [clojure.java.io :as io]
+            [clojure.walk :as walk])
+  (:import [abracad.avro ClojureData ClojureDatumReader ClojureDatumWriter]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser Schema$Type]
-           [org.apache.avro.file
-             CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
-             SeekableFileInput SeekableByteArrayInput]
-           [org.apache.avro.io
-             DatumReader DatumWriter Decoder DecoderFactory
-             Encoder EncoderFactory]
-           [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
+           [java.io ByteArrayOutputStream EOFException File InputStream
+            OutputStream]
+           [org.apache.avro Schema Schema$Parser]
+           [org.apache.avro.file CodecFactory DataFileReader DataFileStream
+            DataFileWriter SeekableByteArrayInput SeekableFileInput
+            SeekableInput]
+           [org.apache.avro.io DatumReader DatumWriter Decoder DecoderFactory
+            Encoder EncoderFactory]))
 
 (defn schema?
   "True iff `schema` is an Avro `Schema` instance."
@@ -29,13 +27,13 @@
 (defn ^:private schema-mangle
   "Mangle `named` forms and existing schemas."
   [form]
-  (cond (named? form) (-> form name mangle)
+  (cond (named? form) (-> form name util/mangle)
         (schema? form) (json/parse-string (str form))
         :else form))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."
-  [schema] (json/generate-string (postwalk schema-mangle schema)))
+  [schema] (json/generate-string (walk/postwalk schema-mangle schema)))
 
 (defn ^:private codec-for
   "Return Avro codec factory for `codec`."
@@ -45,10 +43,10 @@
 (defprotocol PSeekableInput
   "Protocol for coercing to an Avro `SeekableInput`."
   (-seekable-input [x opts]
-    "Attempt to coerce `x` to an Avro `SeekableInput`."))
+    "Attempt to util/coerce `x` to an Avro `SeekableInput`."))
 
 (defn seekable-input
-  "Attempt to coerce `x` to an Avro `SeekableInput`."
+  "Attempt to util/coerce `x` to an Avro `SeekableInput`."
   {:tag `SeekableInput}
   ([x] (-seekable-input x nil))
   ([opts x] (-seekable-input x opts)))
@@ -191,16 +189,16 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
 `source` may be an existing Decoder object or anything on which
 a (binary-encoding) Decoder may be opened."
   [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
-        decoder (coerce Decoder binary-decoder source)]
+  (let [reader (util/coerce DatumReader datum-reader schema)
+        decoder (util/coerce Decoder binary-decoder source)]
     (.read ^DatumReader reader nil decoder)))
 
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
   [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
-        decoder (coerce Decoder binary-decoder source)]
+  (let [reader (util/coerce DatumReader datum-reader schema)
+        decoder (util/coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
         (try
@@ -227,7 +225,7 @@ decoded serially from `source`."
      (data-file-writer nil schema sink))
   ([codec schema sink]
    (let [^DataFileWriter dfw (data-file-writer)
-         sink (coerce OutputStream io/output-stream sink)
+         sink (util/coerce OutputStream io/output-stream sink)
          schema (parse-schema schema)]
      (when codec
        (.setCodec dfw (codec-for codec)))
@@ -260,8 +258,8 @@ decoded serially from `source`."
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
   [schema sink & records]
-  (let [writer (coerce DatumWriter datum-writer schema)
-        encoder (coerce Encoder binary-encoder sink)]
+  (let [writer (util/coerce DatumWriter datum-writer schema)
+        encoder (util/coerce Encoder binary-encoder sink)]
     (doseq [record records]
       (.write ^DatumWriter writer record encoder))
     (.flush ^Encoder encoder)))

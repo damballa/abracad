@@ -2,16 +2,16 @@
   "Generic data reading implementation."
   {:private true}
   (:require [abracad.avro :as avro]
-            [abracad.avro.util :refer [field-keyword if-not-let unmangle]])
+            [abracad.avro.util :as util])
   (:import [abracad.avro ArrayAccessor ClojureDatumReader]
-           clojure.lang.Var
+           [clojure.lang Var]
            [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]))
 
 (defn schema-symbol
   [^Schema schema]
-  (let [ns (.getNamespace schema), n (-> schema .getName unmangle)]
-    (if ns (symbol (unmangle ns) n) (symbol n))))
+  (let [ns (.getNamespace schema), n (-> schema .getName util/unmangle)]
+    (if ns (symbol (util/unmangle ns) n) (symbol n))))
 
 (defn record-plain
   "Record as plain decoded data structures, with :type metadata
@@ -29,12 +29,12 @@ schema name symbol `rname`."
   [^Schema schema rname]
   (if-let [f (get avro/*avro-readers* rname)]
     [false (record-reader f)]
-    (if-not-let [reader (.getProp schema "abracad.reader")]
-      [true record-plain]
+    (if-let [reader (.getProp schema "abracad.reader")]
       (case reader
         "vector" [false record-plain]
         #_else   (throw (ex-info "unknown `abracad.reader`"
-                                 {:reader reader}))))))
+                                 {:reader reader})))
+      [true record-plain])))
 
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
@@ -43,7 +43,7 @@ schema name symbol `rname`."
         [reducef record] (if named?
                            [(fn [m ^Schema$Field f]
                               (assoc! m
-                                (field-keyword f)
+                                (util/field-keyword f)
                                 (.read reader nil (.schema f) in)))
                             (transient {})]
                            [(fn [v ^Schema$Field f]
@@ -54,7 +54,7 @@ schema name symbol `rname`."
 
 (defn read-enum
   [^ClojureDatumReader reader ^Schema expected ^Decoder in]
-  (-> expected .getEnumSymbols (.get (.readEnum in)) unmangle keyword))
+  (-> expected .getEnumSymbols (.get (.readEnum in)) util/unmangle keyword))
 
 (defn read-array-vector
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in ^long n]
