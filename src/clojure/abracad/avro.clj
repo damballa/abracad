@@ -37,7 +37,7 @@
 
 (defn ^:private codec-for
   "Return Avro codec factory for `codec`."
-  {:tag `CodecFactory}
+  ^CodecFactory
   [codec] (if-not (string? codec) codec (CodecFactory/fromString codec)))
 
 (defprotocol PSeekableInput
@@ -47,7 +47,7 @@
 
 (defn seekable-input
   "Attempt to util/coerce `x` to an Avro `SeekableInput`."
-  {:tag `SeekableInput}
+  ^SeekableInput
   ([x] (-seekable-input x nil))
   ([opts x] (-seekable-input x opts)))
 
@@ -70,8 +70,7 @@
     (.parse parser ^String source)
     (.parse parser ^InputStream source)))
 
-(defn ^:private parse-schema*
-  {:tag `Schema}
+(defn ^:private parse-schema* ^Schema
   [& sources]
   (let [parser (Schema$Parser.)]
     (reduce (fn [_ source]
@@ -88,7 +87,7 @@ JSON string, an input stream containing a JSON schema, a Clojure data structure
 which may be converted to a JSON schema, or an already-parsed Avro schema
 object.  The schema for each subsequent source may refer to the types defined in
 the previous schemas.  The parsed schema from the final source is returned."
-  {:tag `Schema}
+  ^Schema
   ;;TODO why is this (schema? source) here?
   ([source] (if (schema? source) source (parse-schema* source)))
   ([source & sources] (apply parse-schema* source sources)))
@@ -128,7 +127,7 @@ but the first `n` fields when sorting."
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
-  {:tag `ClojureDatumReader}
+  ^ClojureDatumReader
   ([] (ClojureDatumReader.))
   ([schema]
      (ClojureDatumReader.
@@ -140,7 +139,7 @@ but the first `n` fields when sorting."
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
-  {:tag `DataFileReader}
+  ^DataFileReader
   ([source] (data-file-reader nil source))
   ([expected source]
      (DataFileReader/openReader
@@ -148,7 +147,7 @@ but the first `n` fields when sorting."
 
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
-  {:tag `DataFileStream}
+  ^DataFileStream
   ([source] (data-file-stream nil source))
   ([expected source]
      (DataFileStream.
@@ -161,7 +160,7 @@ but the first `n` fields when sorting."
 (defn binary-decoder
   "Return a binary-encoding decoder for `source`.  The `source` may be
 an input stream, a byte array, or a vector of `[bytes off len]`."
-  {:tag `Decoder}
+  ^Decoder
   [source]
   (if (vector? source)
     (let [[source off len] source]
@@ -172,12 +171,12 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
 
 (defn direct-binary-decoder
   "Return a non-buffered binary-encoding decoder for `source`."
-  {:tag `Decoder}
+  ^Decoder
   [source] (decoder-factory directBinaryDecoder source nil))
 
 (defn json-decoder
   "Return a JSON-encoding decoder for `source` using `schema`."
-  {:tag `Decoder}
+  ^Decoder
   [schema source]
   (let [schema ^Schema (parse-schema schema)]
     (if (instance? InputStream source)
@@ -208,7 +207,7 @@ decoded serially from `source`."
 
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
-  {:tag `ClojureDatumWriter}
+  ^ClojureDatumWriter
   ([] (ClojureDatumWriter.))
   ([schema]
      (ClojureDatumWriter.
@@ -216,7 +215,7 @@ decoded serially from `source`."
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
-  {:tag `DataFileWriter}
+  ^DataFileWriter
   ([] (DataFileWriter. (datum-writer)))
   ([sink]
      (let [^DataFileWriter dfw (data-file-writer)]
@@ -238,17 +237,17 @@ decoded serially from `source`."
 
 (defn binary-encoder
   "Return a binary-encoding encoder for `sink`."
-  {:tag `Encoder}
+  ^Encoder
   [sink] (encoder-factory binaryEncoder sink nil))
 
 (defn direct-binary-encoder
   "Return an unbuffered binary-encoding encoder for `sink`."
-  {:tag `Encoder}
+  ^Encoder
   [sink] (encoder-factory directBinaryEncoder sink nil))
 
 (defn json-encoder
   "Return a JSON-encoding encoder for `sink` using `schema`."
-  {:tag `Encoder}
+  ^Encoder
   [schema sink]
   (let [schema (parse-schema schema)]
     (encoder-factory jsonEncoder ^Schema schema ^OutputStream sink)))
