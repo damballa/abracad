@@ -3,15 +3,14 @@
   {:private true}
   (:require [abracad.avro :as avro]
             [abracad.avro.edn :as edn]
-            [abracad.avro.util :refer [case-expr case-enum mangle unmangle
-                                       field-keyword]])
-  (:import [java.util Collection Map List]
+            [abracad.avro.util :refer [case-enum case-expr field-keyword mangle]])
+  (:import [abracad.avro ArrayAccessor ClojureDatumWriter]
+           [clojure.lang Indexed IRecord Named Sequential]
            [java.nio ByteBuffer]
-           [clojure.lang Named Sequential IRecord Indexed]
-           [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
-           [org.apache.avro.io Encoder]
+           [java.util Collection Map]
+           [org.apache.avro AvroTypeException Schema Schema$Field Schema$Type]
            [org.apache.avro.generic GenericRecord]
-           [abracad.avro ClojureDatumWriter ArrayAccessor]))
+           [org.apache.avro.io Encoder]))
 
 (def ^:const edn-element
   "abracad.avro.edn.Element")
@@ -34,8 +33,7 @@ record serialization."
 
 (defn element-union?
   [^Schema schema]
-  (let [^Schema schema (-> schema .getTypes first)]
-    (= edn-meta (.getFullName schema))))
+  (= (.getType schema) Schema$Type/UNION))
 
 (defn edn-schema?
   [^Schema schema]
@@ -138,7 +136,7 @@ record serialization."
 
 (defn array-prim?
   [datum]
-  (let [cls (class datum)]
+  (let [cls ^Class (class datum)]
     (and (-> cls .isArray)
          (-> cls .getComponentType .isPrimitive))))
 

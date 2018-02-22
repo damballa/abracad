@@ -2,12 +2,11 @@
   "Generic data reading implementation."
   {:private true}
   (:require [abracad.avro :as avro]
-            [abracad.avro.util
-             :refer [mangle unmangle field-keyword if-not-let]])
-  (:import [clojure.lang Var]
+            [abracad.avro.util :refer [field-keyword if-not-let unmangle]])
+  (:import [abracad.avro ArrayAccessor ClojureDatumReader]
+           clojure.lang.Var
            [org.apache.avro Schema Schema$Field]
-           [org.apache.avro.io Decoder ResolvingDecoder]
-           [abracad.avro ClojureDatumReader ArrayAccessor]))
+           [org.apache.avro.io Decoder ResolvingDecoder]))
 
 (defn schema-symbol
   [^Schema schema]
@@ -76,13 +75,13 @@ schema name symbol `rname`."
     (if (or (nil? atype) (= atype "vector"))
       (read-array-vector reader etype in n)
       (case atype
-        "booleans" (ArrayAccessor/readArray (boolean-array n) n in)
-        "shorts" (ArrayAccessor/readArray (short-array n) n in)
-        "chars" (ArrayAccessor/readArray (char-array n) n in)
+        "booleans" (ArrayAccessor/readArray ^boolean[] (boolean-array n) n in)
+        "shorts" (ArrayAccessor/readArray ^short[] (short-array n) n in)
+        "chars" (ArrayAccessor/readArray ^char[] (char-array n) n in)
         "ints" (ArrayAccessor/readArray (int-array n) n in)
-        "longs" (ArrayAccessor/readArray (long-array n) n in)
-        "floats" (ArrayAccessor/readArray (float-array n) n in)
-        "doubles" (ArrayAccessor/readArray (double-array n) n in)))))
+        "longs" (ArrayAccessor/readArray ^long[] (long-array n) n in)
+        "floats" (ArrayAccessor/readArray ^float[] (float-array n) n in)
+        "doubles" (ArrayAccessor/readArray ^double[] (double-array n) n in)))))
 
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
