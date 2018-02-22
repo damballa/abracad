@@ -228,7 +228,7 @@ decoded serially from `source`."
          schema (parse-schema schema)]
      (when codec
        (.setCodec dfw (codec-for codec)))
-     (.create dfw schema sink)
+     (.create dfw  ^Schema schema ^OutputStream sink)
      dfw)))
 
 (defmacro ^:private encoder-factory

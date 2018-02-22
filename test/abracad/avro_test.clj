@@ -1,11 +1,12 @@
 (ns abracad.avro-test
-  (:require [clojure.test :refer :all]
-            [abracad.avro :as avro]
-            [clojure.java.io :as io])
-  (:import [java.io ByteArrayOutputStream FileInputStream]
+  (:require [abracad.avro :as avro]
+            [clojure.java.io :as io]
+            [clojure.test :refer :all])
+  (:import [clojure.lang ExceptionInfo]
+           [java.io FileInputStream]
            [java.net InetAddress]
-           [org.apache.avro SchemaParseException]
-           [clojure.lang ExceptionInfo]))
+           [org.apache.avro.file DataFileStream]
+           [org.apache.avro SchemaParseException]))
 
 (defn roundtrip-binary
   [schema & records]
@@ -273,5 +274,5 @@
         records [0 1 2 3 4 5]]
     (io/make-parents path)
     (avro/mspit schema path records)
-    (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
+    (with-open [dfs ^DataFileStream (avro/data-file-stream (FileInputStream. path))]
       (is (= records (seq dfs))))))

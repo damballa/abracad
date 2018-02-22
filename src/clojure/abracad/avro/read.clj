@@ -75,13 +75,13 @@ schema name symbol `rname`."
     (if (or (nil? atype) (= atype "vector"))
       (read-array-vector reader etype in n)
       (case atype
-        "booleans" (ArrayAccessor/readArray ^boolean[] (boolean-array n) n in)
-        "shorts" (ArrayAccessor/readArray ^short[] (short-array n) n in)
-        "chars" (ArrayAccessor/readArray ^char[] (char-array n) n in)
-        "ints" (ArrayAccessor/readArray (int-array n) n in)
-        "longs" (ArrayAccessor/readArray ^long[] (long-array n) n in)
-        "floats" (ArrayAccessor/readArray ^float[] (float-array n) n in)
-        "doubles" (ArrayAccessor/readArray ^double[] (double-array n) n in)))))
+        "booleans" (ArrayAccessor/readArray ^booleans (boolean-array n) n in)
+        "shorts" (ArrayAccessor/readArray ^shorts (short-array n) n in)
+        "chars" (ArrayAccessor/readArray ^chars (char-array n) n in)
+        "ints" (ArrayAccessor/readArray ^ints (int-array n) n in)
+        "longs" (ArrayAccessor/readArray ^longs (long-array n) n in)
+        "floats" (ArrayAccessor/readArray ^floats (float-array n) n in)
+        "doubles" (ArrayAccessor/readArray ^doubles (double-array n) n in)))))
 
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
