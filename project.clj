@@ -16,7 +16,7 @@
 
   :global-vars {*warn-on-reflection* true}
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.apache.avro/avro "1.8.2"]
                  [cheshire/cheshire "5.6.1"]]
 
@@ -32,13 +32,14 @@
             "loc"      ["vanity"]}
 
   :profiles {:dev         {:dependencies
-                           [[midje "1.9.1" :exclusions [org.clojure/clojure]]]}
-             :clojure-1-6 {:dependencies
-                           [[org.clojure/clojure "1.6.0"]]}
+                           [[midje "1.9.1" :exclusions [org.clojure/clojure]]
+                            [nubank/matcher-combinators "0.2.1"]]}
              :clojure-1-7 {:dependencies
                            [[org.clojure/clojure "1.7.0"]]}
              :clojure-1-8 {:dependencies
-                           [[org.clojure/clojure "1.8.0"]]}}
+                           [[org.clojure/clojure "1.8.0"]]}
+             :clojure-1-9 {:dependencies
+                           [[org.clojure/clojure "1.9.0"]]}}
 
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
