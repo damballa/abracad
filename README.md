@@ -1,14 +1,15 @@
 # abracad
 
-[![Build Status](https://secure.travis-ci.org/damballa/abracad.png)](http://travis-ci.org/damballa/abracad)
+[![Build Status](https://travis-ci.org/nubank/abracad.svg?branch=master)](https://travis-ci.org/nubank/abracad)
 
 Abracad is a Clojure library for de/serializing Clojure data
 structures with Avro, leveraging the Java Avro implementation.
 
-Abracad supports: a generic mapping between Avro and Clojure data for
-arbitrary schemas; customized protocol-based mappings between Avro
-records and any JVM types; and “schema-less” EDN-in-Avro serialization
-of arbitrary Clojure data.
+Abracad supports:
+ - a generic mapping between Avro and Clojure data for arbitrary schemas;
+ - customized protocol-based mappings between Avro records and any JVM types;
+ - and “schema-less” EDN-in-Avro serialization of arbitrary Clojure data;
+ - de/serialization of Java objects
 
 ## Installation
 
@@ -16,7 +17,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.4.13"]
+[nubank/abracad "0.4.15"]
 ```
 
 ## Usage
@@ -29,25 +30,23 @@ generated via [codox][codox].
 
 ### Schemas
 
-Avro schemas may be parsed from JSON (from either strings or input
-streams), from the Clojure data representation of a JSON schema, or
-from existing Avro Schema objects.
+[Avro schemas](https://avro.apache.org/docs/current/spec.html#schemas) may be 
+parsed from JSON (from either strings or input streams), from the Clojure data 
+representation of a JSON schema, or from existing Avro Schema objects.
 
 ```clj
 (require '[abracad.avro :as avro])
 
 (def schema
-  (avro/parse-schema
-   {:type :record
-    :name "LongList"
-    :aliases ["LinkedLongs"]
-    :fields [{:name "value", :type :long}
-             {:name "next", :type ["LongList", :null]}]}))
+  (avro/parse-schema {:type   :record
+                      :name   "LongList"
+                      :fields [{:name "value":type :long}
+                               {:name "next", :type ["LongList", :null]}]}))
 ```
 
-The `parse-schema` function may be passed multiple schemas, in which
+The `parse-schema` function may be passed **multiple schemas**, in which
 case later schemas may reference types defined in earlier schemas.
-The result is the schema generated from the final argument.
+The result is the schema generated from the **final argument**.
 
 ### Basic de/serialization
 
@@ -139,12 +138,11 @@ Avro de/serialization to arbitrary existing types.
   [address] (InetAddress/getByAddress address))
 
 (def schema
-  (avro/parse-schema
-   {:type :record
-    :name 'ip.address
-    :fields [{:name :address
-              :type [{:type :fixed, :name "IPv4", :size 4}
-                     {:type :fixed, :name "IPv6", :size 16}]}]}))
+  (avro/parse-schema {:type   :record
+                      :name   'ip.address
+                      :fields [{:name :address
+                      :type [{:type :fixed, :name "IPv4", :size 4}
+                             {:type :fixed, :name "IPv6", :size 16}]}]}))
 
 (binding [avro/*avro-readers* {'ip/address #'->InetAddress}]
   (with-open [adf (avro/data-file-writer schema "example.avro")]
@@ -166,14 +164,14 @@ using Avro for Clojure data without pre-defining application-specific
 schemas.
 
 ```clj
-(require '[abracad.avro.edn :as aedn])
+(require '[abracad.avro.edn :as edn])
 
-(def schema (aedn/new-schema))
+(def schema (edn/new-schema))
 
-(->> {:foo ['bar "baz" 1337]}
+(->> {:foo ['bar "baz" 1337 10.2M]}
      (avro/binary-encoded schema)
      (avro/decode schema))
-;;=> {:foo [bar "baz" 1337]}
+;;=> {:foo [bar "baz" 1337 10.2M]}
 ```
 
 ### Hadoop MapReduce integration
@@ -184,21 +182,7 @@ reading, writing, and comparison in Hadoop MapReduce jobs.  Abracad
 the `AvroJob/setDataModelClass` static method in order to map job Avro
 input and output directly to and from Clojure data structures.
 
-## TODO
-
-These are the early days.  Still to be done:
-
-  - Kick the tires on the interface.  There may be glaring holes.
-  - Write more exhaustive tests, to cover the full range of types.
-  - Figure out a cleaner way of handling `_` vs `-`.
-  - Dynamically generate schema-specific datum reader/writer
-    implementations.  All the speed of generating & compiling
-    de/serialization classes from schemas, but with none of the
-    ahead-of-time hassle.
-
 ## License
-
-Copyright © 2013-2015 Damballa Inc. and contributors.
 
 Distributed under your choice of the Eclipse Public License or the
 Apache License, Version 2.0.
