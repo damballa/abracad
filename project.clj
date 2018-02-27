@@ -22,10 +22,10 @@
 
   :codox {:include [abracad.avro abracad.avro.edn]}
 
-  :aliases {"test-all" ["with-profile" ~(str "clojure-1-6:"
-                                             "clojure-1-7:"
-                                             "clojure-1-8")
-                        "test"]
+  :aliases {"test-all" ["with-profile" ~(str "clojure-1-7:"
+                                             "clojure-1-8:"
+                                             "clojure-1-9")
+                        "midje"]
             "coverage" ["cloverage" "-s" "coverage"]
             "loc"      ["vanity"]}
 
@@ -33,14 +33,20 @@
                            [[midje "1.9.1" :exclusions [org.clojure/clojure]]
                             [nubank/matcher-combinators "0.2.1"]]}
              :clojure-1-7 {:dependencies
-                           [[org.clojure/clojure "1.7.0"]]}
+                           [[org.clojure/clojure "1.7.0"]
+                            [midje "1.9.1" :exclusions [org.clojure/clojure]]
+                            [nubank/matcher-combinators "0.2.1"]]}
              :clojure-1-8 {:dependencies
-                           [[org.clojure/clojure "1.8.0"]]}
+                           [[org.clojure/clojure "1.8.0"]
+                            [midje "1.9.1" :exclusions [org.clojure/clojure]]
+                            [nubank/matcher-combinators "0.2.1"]]}
              :clojure-1-9 {:dependencies
-                           [[org.clojure/clojure "1.9.0"]]}}
+                           [[org.clojure/clojure "1.9.0"]
+                            [midje "1.9.1" :exclusions [org.clojure/clojure]]
+                            [nubank/matcher-combinators "0.2.1"]]}}
 
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :test-paths ["test/"]
 
-  :javac-options ["-target" "1.7" "-source" "1.7"])
+  :javac-options ["-target" "1.8" "-source" "1.8"])
