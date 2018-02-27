@@ -20,8 +20,6 @@
                  [org.apache.avro/avro "1.8.2"]
                  [cheshire/cheshire "5.6.1"]]
 
-  :repl-options {:init-ns user}
-
   :codox {:include [abracad.avro abracad.avro.edn]}
 
   :aliases {"test-all" ["with-profile" ~(str "clojure-1-6:"

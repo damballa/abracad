@@ -123,7 +123,7 @@ provided `types`, and optionally named `name`."
 (defn grouping-schema
   "Produce a grouping schema version of record schema `schema` which ignores all
 but the first `n` fields when sorting."
-  [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
+  [n schema] (-> schema unparse-schema (update :fields order-ignore n)))
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
