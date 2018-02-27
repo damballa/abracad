@@ -1,22 +1,20 @@
 (ns abracad.avro
   "Functions for de/serializing data with Avro."
   (:refer-clojure :exclude [compare spit slurp])
-  (:require [clojure.java.io :as io]
-            [clojure.walk :refer [postwalk]]
+  (:require [abracad.avro.util :as util]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle coerce]])
-  (:import [java.io
-             ByteArrayInputStream ByteArrayOutputStream EOFException
-             File FileInputStream InputStream OutputStream]
+            [clojure.java.io :as io]
+            [clojure.walk :as walk])
+  (:import [abracad.avro ClojureData ClojureDatumReader ClojureDatumWriter]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser Schema$Type]
-           [org.apache.avro.file
-             CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
-             SeekableFileInput SeekableByteArrayInput]
-           [org.apache.avro.io
-             DatumReader DatumWriter Decoder DecoderFactory
-             Encoder EncoderFactory]
-           [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
+           [java.io ByteArrayOutputStream EOFException File InputStream
+            OutputStream]
+           [org.apache.avro Schema Schema$Parser]
+           [org.apache.avro.file CodecFactory DataFileReader DataFileStream
+            DataFileWriter SeekableByteArrayInput SeekableFileInput
+            SeekableInput]
+           [org.apache.avro.io DatumReader DatumWriter Decoder DecoderFactory
+            Encoder EncoderFactory]))
 
 (defn schema?
   "True iff `schema` is an Avro `Schema` instance."
@@ -29,27 +27,27 @@
 (defn ^:private schema-mangle
   "Mangle `named` forms and existing schemas."
   [form]
-  (cond (named? form) (-> form name mangle)
+  (cond (named? form) (-> form name util/mangle)
         (schema? form) (json/parse-string (str form))
         :else form))
 
 (defn ^:private clj->json
   "Parse Clojure data into a JSON schema."
-  [schema] (json/generate-string (postwalk schema-mangle schema)))
+  [schema] (json/generate-string (walk/postwalk schema-mangle schema)))
 
 (defn ^:private codec-for
   "Return Avro codec factory for `codec`."
-  {:tag `CodecFactory}
+  ^CodecFactory
   [codec] (if-not (string? codec) codec (CodecFactory/fromString codec)))
 
 (defprotocol PSeekableInput
   "Protocol for coercing to an Avro `SeekableInput`."
   (-seekable-input [x opts]
-    "Attempt to coerce `x` to an Avro `SeekableInput`."))
+    "Attempt to util/coerce `x` to an Avro `SeekableInput`."))
 
 (defn seekable-input
-  "Attempt to coerce `x` to an Avro `SeekableInput`."
-  {:tag `SeekableInput}
+  "Attempt to util/coerce `x` to an Avro `SeekableInput`."
+  ^SeekableInput
   ([x] (-seekable-input x nil))
   ([opts x] (-seekable-input x opts)))
 
@@ -72,8 +70,7 @@
     (.parse parser ^String source)
     (.parse parser ^InputStream source)))
 
-(defn ^:private parse-schema*
-  {:tag `Schema}
+(defn ^:private parse-schema* ^Schema
   [& sources]
   (let [parser (Schema$Parser.)]
     (reduce (fn [_ source]
@@ -90,7 +87,8 @@ JSON string, an input stream containing a JSON schema, a Clojure data structure
 which may be converted to a JSON schema, or an already-parsed Avro schema
 object.  The schema for each subsequent source may refer to the types defined in
 the previous schemas.  The parsed schema from the final source is returned."
-  {:tag `Schema}
+  ^Schema
+  ;;TODO why is this (schema? source) here?
   ([source] (if (schema? source) source (parse-schema* source)))
   ([source & sources] (apply parse-schema* source sources)))
 
@@ -125,11 +123,11 @@ provided `types`, and optionally named `name`."
 (defn grouping-schema
   "Produce a grouping schema version of record schema `schema` which ignores all
 but the first `n` fields when sorting."
-  [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
+  [n schema] (-> schema unparse-schema (update :fields order-ignore n)))
 
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
-  {:tag `ClojureDatumReader}
+  ^ClojureDatumReader
   ([] (ClojureDatumReader.))
   ([schema]
      (ClojureDatumReader.
@@ -141,15 +139,15 @@ but the first `n` fields when sorting."
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
-  {:tag `DataFileReader}
+  ^DataFileReader
   ([source] (data-file-reader nil source))
   ([expected source]
      (DataFileReader/openReader
-      (seekable-input source) (datum-reader expected))))
+      ^SeekableInput (seekable-input source) ^DatumReader (datum-reader expected))))
 
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
-  {:tag `DataFileStream}
+  ^DataFileStream
   ([source] (data-file-stream nil source))
   ([expected source]
      (DataFileStream.
@@ -162,7 +160,7 @@ but the first `n` fields when sorting."
 (defn binary-decoder
   "Return a binary-encoding decoder for `source`.  The `source` may be
 an input stream, a byte array, or a vector of `[bytes off len]`."
-  {:tag `Decoder}
+  ^Decoder
   [source]
   (if (vector? source)
     (let [[source off len] source]
@@ -173,14 +171,14 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
 
 (defn direct-binary-decoder
   "Return a non-buffered binary-encoding decoder for `source`."
-  {:tag `Decoder}
+  ^Decoder
   [source] (decoder-factory directBinaryDecoder source nil))
 
 (defn json-decoder
   "Return a JSON-encoding decoder for `source` using `schema`."
-  {:tag `Decoder}
+  ^Decoder
   [schema source]
-  (let [schema (parse-schema schema)]
+  (let [schema ^Schema (parse-schema schema)]
     (if (instance? InputStream source)
       (decoder-factory jsonDecoder schema ^InputStream source)
       (decoder-factory jsonDecoder schema ^String source))))
@@ -190,26 +188,26 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
 `source` may be an existing Decoder object or anything on which
 a (binary-encoding) Decoder may be opened."
   [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
-        decoder (coerce Decoder binary-decoder source)]
-    (.read reader nil decoder)))
+  (let [reader (util/coerce DatumReader datum-reader schema)
+        decoder (util/coerce Decoder binary-decoder source)]
+    (.read ^DatumReader reader nil decoder)))
 
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
   [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
-        decoder (coerce Decoder binary-decoder source)]
+  (let [reader (util/coerce DatumReader datum-reader schema)
+        decoder (util/coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
         (try
-          (let [record (.read reader nil decoder)]
+          (let [record (.read ^DatumReader reader nil decoder)]
             (cons record (step)))
           (catch EOFException _ nil)))))))
 
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
-  {:tag `ClojureDatumWriter}
+  ^ClojureDatumWriter
   ([] (ClojureDatumWriter.))
   ([schema]
      (ClojureDatumWriter.
@@ -217,7 +215,7 @@ decoded serially from `source`."
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
-  {:tag `DataFileWriter}
+  ^DataFileWriter
   ([] (DataFileWriter. (datum-writer)))
   ([sink]
      (let [^DataFileWriter dfw (data-file-writer)]
@@ -225,12 +223,13 @@ decoded serially from `source`."
   ([schema sink]
      (data-file-writer nil schema sink))
   ([codec schema sink]
-     (let [^DataFileWriter dfw (data-file-writer)
-           sink (coerce OutputStream io/output-stream sink)
-           schema (parse-schema schema)]
-       (when codec (.setCodec dfw (codec-for codec)))
-       (.create dfw schema sink)
-       dfw)))
+   (let [^DataFileWriter dfw (data-file-writer)
+         sink (util/coerce OutputStream io/output-stream sink)
+         schema (parse-schema schema)]
+     (when codec
+       (.setCodec dfw (codec-for codec)))
+     (.create dfw  ^Schema schema ^OutputStream sink)
+     dfw)))
 
 (defmacro ^:private encoder-factory
   "Invoke static methods of default Avro Encoder factory."
@@ -238,31 +237,31 @@ decoded serially from `source`."
 
 (defn binary-encoder
   "Return a binary-encoding encoder for `sink`."
-  {:tag `Encoder}
+  ^Encoder
   [sink] (encoder-factory binaryEncoder sink nil))
 
 (defn direct-binary-encoder
   "Return an unbuffered binary-encoding encoder for `sink`."
-  {:tag `Encoder}
+  ^Encoder
   [sink] (encoder-factory directBinaryEncoder sink nil))
 
 (defn json-encoder
   "Return a JSON-encoding encoder for `sink` using `schema`."
-  {:tag `Encoder}
+  ^Encoder
   [schema sink]
   (let [schema (parse-schema schema)]
-    (encoder-factory jsonEncoder schema ^OutputStream sink)))
+    (encoder-factory jsonEncoder ^Schema schema ^OutputStream sink)))
 
 (defn encode
   "Serially encode each record in `records` to `sink` using `schema`.
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
   [schema sink & records]
-  (let [writer (coerce DatumWriter datum-writer schema)
-        encoder (coerce Encoder binary-encoder sink)]
+  (let [writer (util/coerce DatumWriter datum-writer schema)
+        encoder (util/coerce Encoder binary-encoder sink)]
     (doseq [record records]
-      (.write writer record encoder))
-    (.flush encoder)))
+      (.write ^DatumWriter writer record encoder))
+    (.flush ^Encoder encoder)))
 
 (defn binary-encoded
   "Return bytes produced by binary-encoding `records` with `schema`
@@ -290,27 +289,27 @@ via `encode`."
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."
   [schema f content & opts]
   (let [codec (get opts :codec "snappy")]
-    (with-open [dfw (data-file-writer codec schema f)]
+    (with-open [dfw ^DataFileWriter (data-file-writer codec schema f)]
       (.append dfw content))))
 
 (defn slurp
   "Like core `slurp`, but reads Avro content from `f`."
   [f & opts]
-  (with-open [dfr (data-file-reader f)]
+  (with-open [dfr ^DataFileReader (data-file-reader f)]
     (.next dfr)))
 
 (defn mspit
   "Like Avro `spit`, but emits `content` as a sequence of records."
   [schema f content & opts]
   (let [codec (get opts :codec "snappy")]
-    (with-open [dfw (data-file-writer codec schema f)]
+    (with-open [dfw ^DataFileWriter (data-file-writer codec schema f)]
       (doseq [record content]
         (.append dfw record)))))
 
 (defn mslurp
   "Like Avro `slurp`, but produces a sequence of records."
   [f & opts]
-  (with-open [dfr (data-file-reader f)]
+  (with-open [dfr ^DataFileReader (data-file-reader f)]
     (into [] dfr)))
 
 (defprotocol AvroSerializable

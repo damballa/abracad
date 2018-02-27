@@ -47,11 +47,6 @@ evaluated at macro-expansion time."
   "Keyword for Avro schema field."
   [^Schema$Field f] (-> f .name unmangle keyword))
 
-(defmacro if-not-let
-  "Like `if-let`, but with order of `then` and `else` swapped."
-  [bindings then else]
-  `(if-let ~bindings ~else ~then))
-
 (defn ^:private coerce*
   "Type-hinted form for inline `coerce`."
   [c f x]

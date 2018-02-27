@@ -3,15 +3,14 @@
   {:private true}
   (:require [abracad.avro :as avro]
             [abracad.avro.edn :as edn]
-            [abracad.avro.util :refer [case-expr case-enum mangle unmangle
-                                       field-keyword]])
-  (:import [java.util Collection Map List]
+            [abracad.avro.util :as util])
+  (:import [abracad.avro ArrayAccessor ClojureDatumWriter]
+           [clojure.lang Indexed IRecord Named Sequential]
            [java.nio ByteBuffer]
-           [clojure.lang Named Sequential IRecord Indexed]
-           [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
-           [org.apache.avro.io Encoder]
+           [java.util Collection Map]
+           [org.apache.avro AvroTypeException Schema Schema$Field Schema$Type]
            [org.apache.avro.generic GenericRecord]
-           [abracad.avro ClojureDatumWriter ArrayAccessor]))
+           [org.apache.avro.io Encoder]))
 
 (def ^:const edn-element
   "abracad.avro.edn.Element")
@@ -34,8 +33,7 @@ record serialization."
 
 (defn element-union?
   [^Schema schema]
-  (let [^Schema schema (-> schema .getTypes first)]
-    (= edn-meta (.getFullName schema))))
+  (= (.getType schema) Schema$Type/UNION))
 
 (defn edn-schema?
   [^Schema schema]
@@ -80,16 +78,16 @@ record serialization."
   [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
   (let [field-get (if (edn-schema? schema) edn/field-get avro/field-get)]
     (doseq [^Schema$Field f (.getFields schema)
-            :let [key (field-keyword f), val (field-get datum key)]]
+            :let [key (util/field-keyword f), val (field-get datum key)]]
       (.write writer (.schema f) val out))))
 
 (defn wr-named-checked
   [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
-  (let [fields (into #{} (map field-keyword (.getFields schema)))]
+  (let [fields (into #{} (map util/field-keyword (.getFields schema)))]
     (when (not-every? fields (avro/field-list datum))
       (schema-error! schema datum))
     (doseq [^Schema$Field f (.getFields schema)
-            :let [key (field-keyword f), val (avro/field-get datum key)]]
+            :let [key (util/field-keyword f), val (avro/field-get datum key)]]
       (.write writer (.schema f) val out))))
 
 (defn wr-positional
@@ -113,7 +111,7 @@ record serialization."
 
 (defn write-record*
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
-  (case-expr (.getFullName schema)
+  (util/case-expr (.getFullName schema)
     edn-element (.write writer (elide schema) datum out)
     edn-meta (let [schema (elide schema)]
                (.write writer schema (with-meta datum nil) out)
@@ -134,11 +132,11 @@ record serialization."
 
 (defn write-enum
   [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
-  (.writeEnum out (.getEnumOrdinal schema (-> datum name mangle))))
+  (.writeEnum out (.getEnumOrdinal schema (-> datum name util/mangle))))
 
 (defn array-prim?
   [datum]
-  (let [cls (class datum)]
+  (let [cls ^Class (class datum)]
     (and (-> cls .isArray)
          (-> cls .getComponentType .isPrimitive))))
 
@@ -164,8 +162,8 @@ record serialization."
     (cond (string? t) t
           (instance? Named t)
           , (let [ns (namespace t)
-                  ns (if ns (mangle ns))
-                  n (-> t name mangle)]
+                  ns (if ns (util/mangle ns))
+                  n (-> t name util/mangle)]
               (if ns (str ns "." n) n))
           (class? t) (.getName ^Class t))))
 
@@ -212,12 +210,12 @@ record serialization."
   (or (and (vector? datum)
            (= (count datum) (-> schema .getFields count)))
       (and (map? datum)
-           (every? (->> schema .getFields (map field-keyword) set)
+           (every? (->> schema .getFields (map util/field-keyword) set)
                    (avro/field-list datum)))))
 
 (defn avro-enum?
   [^Schema schema datum]
-  (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
+  (and (named? datum) (.hasEnumSymbol schema (-> datum name util/mangle))))
 
 (defn avro-bytes?
   [^Schema schema datum]
@@ -231,7 +229,7 @@ record serialization."
 
 (defn schema-match?
   [^Schema schema datum]
-  (case-enum (.getType schema)
+  (util/case-enum (.getType schema)
     Schema$Type/RECORD  (avro-record? schema datum)
     Schema$Type/ENUM    (avro-enum? schema datum)
     Schema$Type/FIXED   (avro-fixed? schema datum)
