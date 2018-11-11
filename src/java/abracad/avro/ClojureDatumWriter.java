@@ -1,7 +1,9 @@
 package abracad.avro;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.UnresolvedUnionException;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -43,7 +45,14 @@ public void
 write(Schema schema, Object datum, Encoder out) throws IOException {
     try {
         switch (schema.getType()) {
-        case INT: out.writeInt(RT.intCast(datum)); break;
+        case INT:
+            if (schema.getLogicalType() instanceof LogicalTypes.Date){
+                long day = ((LocalDate) datum).toEpochDay();
+                out.writeInt(RT.intCast(day));
+            } else {
+                out.writeInt(RT.intCast(datum));
+            }
+            break;
         case LONG: out.writeLong(RT.longCast(datum)); break;
         case FLOAT: out.writeFloat(RT.floatCast(datum)); break;
         case DOUBLE: out.writeDouble(RT.doubleCast(datum)); break;

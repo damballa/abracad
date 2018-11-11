@@ -4,6 +4,7 @@
             [clojure.java.io :as io])
   (:import [java.io ByteArrayOutputStream FileInputStream]
            [java.net InetAddress]
+           [java.time LocalDate Instant]
            [org.apache.avro SchemaParseException]
            [clojure.lang ExceptionInfo]))
 
@@ -103,6 +104,24 @@
     (is (roundtrips? schema [true] [true]))
     (is (roundtrips? schema [false] [false]))
     (is (roundtrips? schema [false] [nil]))))
+
+;; TODO possible extension of more logical types? Very hard coded at the moment
+(deftest test-date
+  (let [schema         (avro/parse-schema {:type 'int :logicalType :date})
+        epoch          (LocalDate/of 1970 1 1)
+        today          (LocalDate/now)
+        before-epoch   (LocalDate/of 1969 12 31)
+        max-date        (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_INT days since epoch
+        after-max      (LocalDate/of 5881580 7 12)
+        min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_INT days before epoch
+        before-min     (LocalDate/of -5877641 6 22)]
+    (is (roundtrips? schema [epoch] [epoch]))
+    (is (roundtrips? schema [today] [today]))
+    (is (roundtrips? schema [before-epoch] [before-epoch]))
+    (is (roundtrips? schema [max-date] [max-date]))
+    (is (roundtrips? schema [min-date] [min-date]))
+    (is (thrown? IllegalArgumentException (roundtrips? schema [after-max] [after-max])))
+    (is (thrown? IllegalArgumentException (roundtrips? schema [before-min] [before-min])))))
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}
