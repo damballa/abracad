@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
             [clojure.java.io :as io])
-  (:import [java.io ByteArrayOutputStream FileInputStream]
+  (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate Instant]
            [org.apache.avro SchemaParseException]
@@ -111,17 +111,36 @@
         epoch          (LocalDate/of 1970 1 1)
         today          (LocalDate/now)
         before-epoch   (LocalDate/of 1969 12 31)
-        max-date        (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_INT days since epoch
+        max-date        (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_VALUE days since epoch
         after-max      (LocalDate/of 5881580 7 12)
-        min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_INT days before epoch
+        min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_VALUE days before epoch
         before-min     (LocalDate/of -5877641 6 22)]
     (is (roundtrips? schema [epoch] [epoch]))
     (is (roundtrips? schema [today] [today]))
     (is (roundtrips? schema [before-epoch] [before-epoch]))
     (is (roundtrips? schema [max-date] [max-date]))
     (is (roundtrips? schema [min-date] [min-date]))
-    (is (thrown? IllegalArgumentException (roundtrips? schema [after-max] [after-max])))
-    (is (thrown? IllegalArgumentException (roundtrips? schema [before-min] [before-min])))))
+    (is (thrown? ArithmeticException (roundtrips? schema [after-max] [after-max])))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min] [before-min])))))
+
+(deftest test-timestamp-millis
+  (binding [abracad.avro.util/*mangle-names* false]
+    (let [schema (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
+          epoch          Instant/EPOCH
+          now            (Instant/now)
+          before-epoch   (Instant/ofEpochMilli -1)
+          max-time       (Instant/ofEpochMilli Long/MAX_VALUE)
+          after-max      (.plusMillis max-time 1)
+          min-time       (Instant/ofEpochMilli Long/MIN_VALUE)
+          before-min     (.minusMillis min-time 1)]
+      (is (roundtrips? schema [epoch] [epoch]))
+      (is (roundtrips? schema [now] [now]))
+      (is (roundtrips? schema [before-epoch] [before-epoch]))
+      (is (roundtrips? schema [max-time] [max-time]))
+      (is (roundtrips? schema [min-time] [min-time]))
+      (is (thrown? ArithmeticException (roundtrips? schema [after-max] [after-max])))
+      (is (thrown? ArithmeticException (roundtrips? schema [before-min] [before-min]))))))
+
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}

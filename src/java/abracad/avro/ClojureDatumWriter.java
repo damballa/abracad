@@ -1,9 +1,6 @@
 package abracad.avro;
 
 import java.io.IOException;
-import java.time.LocalDate;
-
-import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.UnresolvedUnionException;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -32,32 +29,29 @@ private static class Vars {
 
 public
 ClojureDatumWriter() {
-    super();
+    super(LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
 public
 ClojureDatumWriter(Schema schema) {
-    super(schema);
+    super(schema, LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
 @Override
 public void
 write(Schema schema, Object datum, Encoder out) throws IOException {
     try {
-        switch (schema.getType()) {
-        case INT:
-            if (schema.getLogicalType() instanceof LogicalTypes.Date){
-                long day = ((LocalDate) datum).toEpochDay();
-                out.writeInt(RT.intCast(day));
-            } else {
-                out.writeInt(RT.intCast(datum));
+        if(schema.getLogicalType() != null){
+            super.write(schema, datum, out);
+        } else {
+            switch (schema.getType()) {
+                case INT: out.writeInt(RT.intCast(datum)); break;
+                case LONG: out.writeLong(RT.longCast(datum)); break;
+                case FLOAT: out.writeFloat(RT.floatCast(datum)); break;
+                case DOUBLE: out.writeDouble(RT.doubleCast(datum)); break;
+                case BOOLEAN: out.writeBoolean(RT.booleanCast(datum)); break;
+                default: super.write(schema, datum, out); break;
             }
-            break;
-        case LONG: out.writeLong(RT.longCast(datum)); break;
-        case FLOAT: out.writeFloat(RT.floatCast(datum)); break;
-        case DOUBLE: out.writeDouble(RT.doubleCast(datum)); break;
-        case BOOLEAN: out.writeBoolean(RT.booleanCast(datum)); break;
-        default: super.write(schema, datum, out); break;
         }
     } catch (NullPointerException e) {
         throw super.npe(e, " of " + schema.getFullName());

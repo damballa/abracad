@@ -127,6 +127,7 @@ provided `types`, and optionally named `name`."
 but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
+;; TODO provide way to extend logical types with your own readers by accepting data?
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
@@ -207,6 +208,7 @@ decoded serially from `source`."
             (cons record (step)))
           (catch EOFException _ nil)))))))
 
+;; TODO provide way to extend logical types with your own writers by accepting data?
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}

@@ -1,9 +1,7 @@
 package abracad.avro;
 
 import java.io.IOException;
-import java.time.LocalDate;
 
-import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.Decoder;
@@ -32,17 +30,17 @@ private static class Vars {
 
 public
 ClojureDatumReader() {
-    super(null, null);
+    super(null, null, LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
 public
 ClojureDatumReader(Schema schema) {
-    super(schema, schema);
+    super(schema, schema, LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
 public
 ClojureDatumReader(Schema writer, Schema reader) {
-    super(writer, reader);
+    super(writer, reader, LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
 @Override
@@ -99,17 +97,6 @@ protected Object
 readBytes(Object old, Schema expected, Decoder in)
         throws IOException {
     return Vars.readBytes.invoke(this, expected, in);
-}
-
-@Override
-protected Object readInt(Object old, Schema expected, Decoder in)
-        throws IOException {
-    Object value = super.readInt(old, expected, in);
-    if(expected.getLogicalType() instanceof LogicalTypes.Date){
-        return LocalDate.ofEpochDay((int) value);
-    } else {
-        return value;
-    }
 }
 
 }
