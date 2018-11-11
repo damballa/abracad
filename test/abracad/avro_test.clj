@@ -5,8 +5,9 @@
   (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate Instant]
-           [org.apache.avro SchemaParseException]
-           [clojure.lang ExceptionInfo]))
+           [org.apache.avro SchemaParseException AvroTypeException]
+           [clojure.lang ExceptionInfo]
+           (java.util UUID)))
 
 (defn roundtrip-binary
   [schema & records]
@@ -115,16 +116,16 @@
         after-max      (LocalDate/of 5881580 7 12)
         min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_VALUE days before epoch
         before-min     (LocalDate/of -5877641 6 22)]
-    (is (roundtrips? schema [epoch] [epoch]))
-    (is (roundtrips? schema [today] [today]))
-    (is (roundtrips? schema [before-epoch] [before-epoch]))
-    (is (roundtrips? schema [max-date] [max-date]))
-    (is (roundtrips? schema [min-date] [min-date]))
-    (is (thrown? ArithmeticException (roundtrips? schema [after-max] [after-max])))
-    (is (thrown? ArithmeticException (roundtrips? schema [before-min] [before-min])))))
+    (is (roundtrips? schema [epoch]))
+    (is (roundtrips? schema [today]))
+    (is (roundtrips? schema [before-epoch]))
+    (is (roundtrips? schema [max-date]))
+    (is (roundtrips? schema [min-date]))
+    (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
 
 (deftest test-timestamp-millis
-  (binding [abracad.avro.util/*mangle-names* false]
+  (binding [abracad.avro.util/*mangle-names* false]         ;; Becaususe 'timestamp-millis' -> 'timestamp_millis'
     (let [schema (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
           epoch          Instant/EPOCH
           now            (Instant/now)
@@ -133,14 +134,30 @@
           after-max      (.plusMillis max-time 1)
           min-time       (Instant/ofEpochMilli Long/MIN_VALUE)
           before-min     (.minusMillis min-time 1)]
-      (is (roundtrips? schema [epoch] [epoch]))
-      (is (roundtrips? schema [now] [now]))
-      (is (roundtrips? schema [before-epoch] [before-epoch]))
-      (is (roundtrips? schema [max-time] [max-time]))
-      (is (roundtrips? schema [min-time] [min-time]))
-      (is (thrown? ArithmeticException (roundtrips? schema [after-max] [after-max])))
-      (is (thrown? ArithmeticException (roundtrips? schema [before-min] [before-min]))))))
+      (is (roundtrips? schema [epoch]))
+      (is (roundtrips? schema [now]))
+      (is (roundtrips? schema [before-epoch]))
+      (is (roundtrips? schema [max-time]))
+      (is (roundtrips? schema [min-time]))
+      (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
+      (is (thrown? ArithmeticException (roundtrips? schema [before-min]))))))
 
+;; TODO rounding option? Possibly as part of the clojure interface
+;(deftest test-decmial
+;  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})]
+;    (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
+;    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))            ;; Scale too small
+;    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))        ;; Scale too big
+;    (is (roundtrips? schema [(bigdec 123456789.123456)] [(bigdec 456789.123456)]))))    ;; More than precision
+;; TODO do we need to test with GenericFixed also?
+
+(deftest test-uuid
+  (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
+        uuid        (UUID/randomUUID)
+        stringUUID  "a7b168ce-d4ff-49a2-a7a5-e65ac06dbe67"]
+    (is (roundtrips? schema [uuid]))
+    (is (roundtrips? schema [(UUID/fromString stringUUID)] [stringUUID]))))
+;; TODO custom logical type. I don't know what else you could need though??? date-range???
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}

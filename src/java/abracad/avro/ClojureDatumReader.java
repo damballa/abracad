@@ -28,6 +28,7 @@ private static class Vars {
     }
 }
 
+// TODO make types configurable and move to clojure when all tests working
 public
 ClojureDatumReader() {
     super(null, null, LogicalTypes.DEFAULT_LOGICAL_TYPES);
@@ -43,6 +44,7 @@ ClojureDatumReader(Schema writer, Schema reader) {
     super(writer, reader, LogicalTypes.DEFAULT_LOGICAL_TYPES);
 }
 
+// TODO this seems wrong, is causing bigdecimal issues :(
 @Override
 public Object
 read(Object old, Schema expected, ResolvingDecoder in)

@@ -1,6 +1,7 @@
 package abracad.avro;
 
 import org.apache.avro.Conversion;
+import org.apache.avro.Conversions;
 import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 
@@ -15,6 +16,8 @@ public class LogicalTypes {
         ClojureData d = new ClojureData();
         d.addLogicalTypeConversion(new LocalDateConversion());
         d.addLogicalTypeConversion(new InstantConversion());
+//        d.addLogicalTypeConversion(new Conversions.DecimalConversion()); TODO Not working because of reader overwriting :(
+        d.addLogicalTypeConversion(new Conversions.UUIDConversion());
         DEFAULT_LOGICAL_TYPES = d;
     }
 
