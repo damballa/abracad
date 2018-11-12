@@ -142,13 +142,12 @@
       (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
       (is (thrown? ArithmeticException (roundtrips? schema [before-min]))))))
 
-;; TODO rounding option? Possibly as part of the clojure interface
-;(deftest test-decmial
-;  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})]
-;    (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
-;    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))            ;; Scale too small
-;    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))        ;; Scale too big
-;    (is (roundtrips? schema [(bigdec 123456789.123456)] [(bigdec 456789.123456)]))))    ;; More than precision
+(deftest test-decmial
+  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})]
+    (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
+    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))               ;; Scale too small
+    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))           ;; Scale too big
+    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)]))))) ;; More than precision
 ;; TODO do we need to test with GenericFixed also?
 
 (deftest test-uuid

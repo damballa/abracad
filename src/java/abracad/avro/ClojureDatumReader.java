@@ -98,6 +98,9 @@ readFixed(Object old, Schema expected, Decoder in)
 protected Object
 readBytes(Object old, Schema expected, Decoder in)
         throws IOException {
+    if(expected.getLogicalType() != null) {
+        return super.readBytes(old, expected, in);
+    }
     return Vars.readBytes.invoke(this, expected, in);
 }
 

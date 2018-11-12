@@ -16,7 +16,7 @@ public class LogicalTypes {
         ClojureData d = new ClojureData();
         d.addLogicalTypeConversion(new LocalDateConversion());
         d.addLogicalTypeConversion(new InstantConversion());
-//        d.addLogicalTypeConversion(new Conversions.DecimalConversion()); TODO Not working because of reader overwriting :(
+        d.addLogicalTypeConversion(new Conversions.DecimalConversion());
         d.addLogicalTypeConversion(new Conversions.UUIDConversion());
         DEFAULT_LOGICAL_TYPES = d;
     }
