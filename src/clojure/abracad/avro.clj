@@ -130,30 +130,28 @@ but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
 (defn ^:private clojure-data [conversions]
-  (ClojureData. (map c/coerce (seq conversions))))                ;; TODO need to map key value and check the java types for KW consistency
+  (ClojureData. (map c/coerce (seq conversions))))
 
-;; TODO documentation update
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
-  ([] (ClojureDatumReader.))
-  ([arg]
-   (if (or
-         (instance? Schema arg)
-         (not (contains? arg :schema)))
-     (datum-reader {:schema arg :conversions c/default-conversions})
-     (let [{:keys [schema conversions]} arg
-           schema                       (if-not (nil? schema) (parse-schema schema))]
-       (ClojureDatumReader.
-         schema
-         schema
-         (clojure-data conversions)))))
-  ([expected actual]
+  ([] (datum-reader nil))
+  ([schema] (datum-reader schema c/default-conversions))
+  ([schema conversions] (datum-reader schema schema conversions))
+  ([expected actual conversions]
      (ClojureDatumReader.
       (if-not (nil? expected) (parse-schema expected))
-      (if-not (nil? actual) (parse-schema actual)))))
+      (if-not (nil? actual) (parse-schema actual))
+      (clojure-data conversions))))
 
-;; TODO documentation update
+(defn ^:private datum-reader-arg [arg]
+  (if (or
+        (instance? Schema arg)
+        (not (contains? arg :schema)))
+    (datum-reader arg)
+    (let [{:keys [schema conversions]} arg]
+      (datum-reader schema conversions))))
+
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
@@ -161,9 +159,8 @@ but the first `n` fields when sorting."
   ([expected source](data-file-reader expected c/default-conversions source))
   ([expected conversions source]
    (DataFileReader/openReader
-     (seekable-input source) (datum-reader {:schema expected :conversions conversions}))))
+     (seekable-input source) (datum-reader expected conversions))))
 
-;; TODO documentation update
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
@@ -171,7 +168,7 @@ but the first `n` fields when sorting."
   ([expected source] (data-file-stream expected c/default-conversions source))
   ([expected conversions source]
    (DataFileStream.
-     (io/input-stream source) (datum-reader {:schema expected :conversions conversions}))))
+     (io/input-stream source) (datum-reader expected conversions))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
@@ -209,7 +206,7 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
 `source` may be an existing Decoder object or anything on which
 a (binary-encoding) Decoder may be opened."
   [arg source]
-  (let [reader (coerce DatumReader datum-reader arg)
+  (let [reader (coerce DatumReader datum-reader-arg arg)
         decoder (coerce Decoder binary-decoder source)]
     (.read reader nil decoder)))
 
@@ -218,7 +215,7 @@ a (binary-encoding) Decoder may be opened."
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
   [arg source]
-  (let [reader (coerce DatumReader datum-reader arg)
+  (let [reader (coerce DatumReader datum-reader-arg arg)
         decoder (coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
@@ -230,18 +227,21 @@ decoded serially from `source`."
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}
-  ([] (ClojureDatumWriter.))
-  ([arg]
-   (if (or
-         (instance? Schema arg)
-         (not (contains? arg :schema)))
-     (datum-writer {:schema arg :conversions c/default-conversions})
-     (let [{:keys [schema conversions]} arg]
-       (ClojureDatumWriter.
-         (parse-schema schema)
-         (clojure-data conversions))))))
+  ([] (datum-writer nil))
+  ([schema] (datum-writer schema c/default-conversions))
+  ([schema conversions]
+   (ClojureDatumWriter.
+     (if-not (nil? schema) (parse-schema schema))
+     (clojure-data conversions))))
 
-;; TODO documentation update and add conversions
+(defn ^:private datum-writer-arg [arg]
+  (if (or
+        (instance? Schema arg)
+        (not (contains? arg :schema)))
+    (datum-writer arg)
+    (let [{:keys [schema conversions]} arg]
+      (datum-writer schema conversions))))
+
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
   {:tag `DataFileWriter}
@@ -286,7 +286,7 @@ decoded serially from `source`."
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
   [arg sink & records]
-  (let [writer (coerce DatumWriter datum-writer arg)
+  (let [writer (coerce DatumWriter datum-writer-arg arg)
         encoder (coerce Encoder binary-encoder sink)]
     (doseq [record records]
       (.write writer record encoder))
