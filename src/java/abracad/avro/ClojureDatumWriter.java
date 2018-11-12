@@ -27,15 +27,19 @@ private static class Vars {
     }
 }
 
-// TODO make types configurable and move to clojure when all tests working
 public
 ClojureDatumWriter() {
-    super(LogicalTypes.DEFAULT_LOGICAL_TYPES);
+    super();
 }
 
 public
 ClojureDatumWriter(Schema schema) {
-    super(schema, LogicalTypes.DEFAULT_LOGICAL_TYPES);
+    super(schema);
+}
+
+public
+ClojureDatumWriter(Schema schema, ClojureData data) {
+    super(schema, data);
 }
 
 @Override

@@ -4,12 +4,13 @@
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle coerce]])
+            [abracad.avro.util :refer [returning mangle unmangle coerce]]
+            [abracad.avro.conversion :as c])
   (:import [java.io
-             ByteArrayInputStream ByteArrayOutputStream EOFException
-             File FileInputStream InputStream OutputStream]
+             ByteArrayOutputStream EOFException
+             File InputStream OutputStream]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser Schema$Type]
+           [org.apache.avro Schema Schema$Parser]
            [org.apache.avro.file
              CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
              SeekableFileInput SeekableByteArrayInput]
@@ -127,7 +128,7 @@ provided `types`, and optionally named `name`."
 but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
-;; TODO provide way to extend logical types with your own readers by accepting data?
+;; TODO documentation update and conversions
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
@@ -140,6 +141,7 @@ but the first `n` fields when sorting."
       (if-not (nil? expected) (parse-schema expected))
       (if-not (nil? actual) (parse-schema actual)))))
 
+;; TODO documentation update and conversions
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
@@ -148,6 +150,7 @@ but the first `n` fields when sorting."
      (DataFileReader/openReader
       (seekable-input source) (datum-reader expected))))
 
+;; TODO documentation update and conversions
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
@@ -186,6 +189,7 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
       (decoder-factory jsonDecoder schema ^InputStream source)
       (decoder-factory jsonDecoder schema ^String source))))
 
+;; TODO documentation update and conversions
 (defn decode
   "Decode and return one object from `source` using `schema`.  The
 `source` may be an existing Decoder object or anything on which
@@ -195,6 +199,7 @@ a (binary-encoding) Decoder may be opened."
         decoder (coerce Decoder binary-decoder source)]
     (.read reader nil decoder)))
 
+;; TODO documentation update and conversions
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
@@ -208,15 +213,20 @@ decoded serially from `source`."
             (cons record (step)))
           (catch EOFException _ nil)))))))
 
-;; TODO provide way to extend logical types with your own writers by accepting data?
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}
   ([] (ClojureDatumWriter.))
-  ([schema]
-     (ClojureDatumWriter.
-      (if-not (nil? schema) (parse-schema schema)))))
+  ([arg]
+   (if (not (:schema arg))
+     (datum-writer {:schema arg :conversions []})
+     (let [{:keys [schema conversions]} arg
+           conversionVec                (if (nil? conversions) [] conversions)] ;; TODO let conversions be a map and then we can merge
+       (ClojureDatumWriter.
+         (parse-schema schema)
+         (ClojureData. (map c/coerce conversionVec)))))))
 
+;; TODO conversions here and documentation update
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
   {:tag `DataFileWriter}
@@ -255,32 +265,36 @@ decoded serially from `source`."
   (let [schema (parse-schema schema)]
     (encoder-factory jsonEncoder schema ^OutputStream sink)))
 
+;; TODO documentation update
 (defn encode
   "Serially encode each record in `records` to `sink` using `schema`.
 The `sink` may be an existing Encoder object, or anything on which
 a (binary-encoding) Encoder may be opened."
-  [schema sink & records]
-  (let [writer (coerce DatumWriter datum-writer schema)
+  [arg sink & records]
+  (let [writer (coerce DatumWriter datum-writer arg)
         encoder (coerce Encoder binary-encoder sink)]
     (doseq [record records]
       (.write writer record encoder))
     (.flush encoder)))
 
+;; TODO documentation update
 (defn binary-encoded
   "Return bytes produced by binary-encoding `records` with `schema`
 via `encode`."
-  [schema & records]
+  [arg & records]
   (with-open [out (ByteArrayOutputStream.)]
-    (apply encode schema out records)
+    (apply encode arg out records)
     (.toByteArray out)))
 
+;; TODO documentation update
 (defn json-encoded
   "Return string produced by JSON-encoding `records` with `schema`
 via `encode`."
-  [schema & records]
+  [arg & records]
   (with-open [out (ByteArrayOutputStream.)]
-    (apply encode schema (json-encoder schema out) records)
-    (String. (.toByteArray out))))
+    (let [schema (if (:schema arg) (:schema arg) arg)]
+      (apply encode arg (json-encoder schema out) records)
+      (String. (.toByteArray out)))))
 
 (defn compare
   "Compare `x` and `y` according to `schema`."

@@ -2,8 +2,7 @@
   "Generic data comparison implementation."
   {:private true}
   (:refer-clojure :exclude [compare])
-  (:require [clojure.core :as cc]
-            [abracad.avro :as avro]
+  (:require [abracad.avro :as avro]
             [abracad.avro.write :refer [resolve-union*]]
             [abracad.avro.util :refer [case-enum if-not-let]])
   (:import [org.apache.avro Schema Schema$Field Schema$Field$Order Schema$Type]

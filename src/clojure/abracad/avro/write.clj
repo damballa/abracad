@@ -5,7 +5,7 @@
             [abracad.avro.edn :as edn]
             [abracad.avro.util :refer [case-expr case-enum mangle unmangle
                                        field-keyword]])
-  (:import [java.util Collection Map List]
+  (:import [java.util Collection Map]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]

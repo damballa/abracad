@@ -37,7 +37,7 @@ evaluated at macro-expansion time."
 
 (defn mangle
   "Perform Clojure->Avro name-mangling when `*mangle-names*` is true."
-  [^String n] (if *mangle-names* (.replace n \- \_) n))
+  [^String n] (if *mangle-names* (.replace n \- \_) n))     ;; TODO don't mangle logical types where possible.
 
 (defn unmangle
   "Reverse Clojure->Avro name-mangling when `*mangle-names* is true."

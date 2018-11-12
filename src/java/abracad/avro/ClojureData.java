@@ -1,7 +1,9 @@
 package abracad.avro;
 
 import java.io.IOException;
+import java.util.List;
 
+import org.apache.avro.Conversion;
 import org.apache.avro.Schema;
 import org.apache.avro.reflect.ReflectData;
 import org.apache.avro.io.DatumReader;
@@ -34,6 +36,15 @@ ClojureData(ClassLoader classLoader) {
     super(classLoader);
 }
 
+public
+ClojureData(List<Conversion<?>> conversions) {
+    this();
+    // TODO better way to do this? Can't really see a way since the value isn't exposed in a constructor
+    for(Conversion<?> conversion: conversions) {
+        addLogicalTypeConversion(conversion);
+    }
+}
+
 public static ClojureData
 get() {
     return INSTANCE;
@@ -54,7 +65,7 @@ createDatumReader(Schema writer, Schema reader) {
 @Override
 public DatumWriter
 createDatumWriter(Schema schema) {
-  return new ClojureDatumWriter(schema);
+  return new ClojureDatumWriter(schema, this);
 }
 
 @Override

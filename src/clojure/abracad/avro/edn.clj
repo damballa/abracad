@@ -1,10 +1,9 @@
 (ns abracad.avro.edn
   (:require [abracad.avro :as avro]
             [abracad.avro.util :refer [coerce]])
-  (:import [clojure.lang BigInt Cons IMeta IPersistentList IPersistentMap
-             IPersistentSet IPersistentVector ISeq Keyword PersistentArrayMap
-             PersistentQueue Ratio Sorted Symbol]
-           [org.apache.avro Schema]))
+  (:import [clojure.lang BigInt IPersistentList IPersistentMap
+             IPersistentSet IPersistentVector ISeq Keyword
+             PersistentQueue Ratio Sorted Symbol]))
 
 (defprotocol EDNAvroSerializable
   "Protocol for customizing EDN-in-Avro serialization."

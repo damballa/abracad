@@ -1,6 +1,7 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
+            [abracad.avro.conversion :as c]
             [clojure.java.io :as io])
   (:import [java.io FileInputStream]
            [java.net InetAddress]
@@ -9,14 +10,15 @@
            [clojure.lang ExceptionInfo]
            (java.util UUID)))
 
+;; TODO update README and doc strings
 (defn roundtrip-binary
   [schema & records]
-  (->> (apply avro/binary-encoded schema records)
+  (->> (apply avro/binary-encoded {:schema schema :conversions c/default-conversions} records)
        (avro/decode-seq schema)))
 
 (defn roundtrip-json
   [schema & records]
-  (->> (apply avro/json-encoded schema records)
+  (->> (apply avro/json-encoded {:schema schema :conversions c/default-conversions} records)
        (avro/json-decoder schema)
        (avro/decode-seq schema)))
 
@@ -106,13 +108,12 @@
     (is (roundtrips? schema [false] [false]))
     (is (roundtrips? schema [false] [nil]))))
 
-;; TODO possible extension of more logical types? Very hard coded at the moment
 (deftest test-date
   (let [schema         (avro/parse-schema {:type 'int :logicalType :date})
         epoch          (LocalDate/of 1970 1 1)
         today          (LocalDate/now)
         before-epoch   (LocalDate/of 1969 12 31)
-        max-date        (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_VALUE days since epoch
+        max-date       (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_VALUE days since epoch
         after-max      (LocalDate/of 5881580 7 12)
         min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_VALUE days before epoch
         before-min     (LocalDate/of -5877641 6 22)]
@@ -148,7 +149,7 @@
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))               ;; Scale too small
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))           ;; Scale too big
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)]))))) ;; More than precision
-;; TODO do we need to test with GenericFixed also?
+;; TODO do we need to test with GenericFixed also? It seems that the Fixed schema does not parse with decimal type :/
 
 (deftest test-uuid
   (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
