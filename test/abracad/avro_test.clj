@@ -162,13 +162,18 @@
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)]))))) ;; More than precision
 ;; TODO do we need to test with GenericFixed also? It seems that the Fixed schema does not parse with decimal type :/
 
+(deftest test-keyword
+  (let [schema (avro/parse-schema {:type 'string :logicalType :keyword})]
+    (is (roundtrips? schema [:anything]))
+    (is (roundtrips? schema [:foo]))))
+
 (deftest test-uuid
   (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
         uuid        (UUID/randomUUID)
         stringUUID  "a7b168ce-d4ff-49a2-a7a5-e65ac06dbe67"]
     (is (roundtrips? schema [uuid]))
     (is (roundtrips? schema [(UUID/fromString stringUUID)] [stringUUID]))))
-;; TODO custom logical type. I don't know what else you could need though??? date-range???
+
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}

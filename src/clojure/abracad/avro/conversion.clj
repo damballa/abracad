@@ -1,8 +1,10 @@
 (ns abracad.avro.conversion
   "Logical Type converter implementations"
   (:import (java.time LocalDate LocalTime Instant)
-           (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion)
-           (java.time.temporal ChronoField ChronoUnit)))
+           (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion LogicalTypes)
+           (java.time.temporal ChronoField ChronoUnit)
+           (clojure.lang Keyword)
+           (abracad.avro KeywordLogicalTypeFactory)))
 
 ;; TODO conversions in a map lt -> conversion so you can merge.
 ;; TODO should be global binding dynamic thing?? Or just pass in logical types?
@@ -69,10 +71,16 @@
 (def uuid-conversion (Conversions$UUIDConversion.))
 
 (def decimal-conversion (Conversions$DecimalConversion.))
+;; TODO conversion for decimal that rounds and sets scale before conversion
+
+(def keyword-conversion
+  {:logical-type "keyword"
+   :class        Keyword
+   :string          {:from (fn [name ^String _ _] (keyword name))
+                     :to   (fn [keyword ^Keyword _ _] (name keyword))}})
 
 (def default-conversions
-  [date-conversion, time-conversion, timestamp-conversion, uuid-conversion, decimal-conversion])
+  [date-conversion, time-conversion, timestamp-conversion, uuid-conversion, decimal-conversion, keyword-conversion])
 
-;; TODO conversion for decimal that rounds and sets scale before conversion
-;; TODO keyword logical type and conversion
-;; TODO ISO Date String logical type?
+;; TODO allow custom logical types to be registered using a global dynamic.
+(LogicalTypes/register KeywordLogicalTypeFactory/TYPE (KeywordLogicalTypeFactory.))
