@@ -127,36 +127,34 @@
     (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
 
 (deftest test-time
-  (binding [abracad.avro.util/*mangle-names* false]         ;; Because 'time-millis' -> 'time_millis'
-    (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})
-          midnight                  LocalTime/MIDNIGHT
-          now                       (LocalTime/now)
-          one-milli-before-midnight (.minus midnight 1 ChronoUnit/MILLIS)]
-      (is (roundtrips? schema [midnight]))
-      (is (roundtrips? schema [now]))
-      (is (roundtrips? schema [one-milli-before-midnight])))))
+  (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})
+        midnight                  LocalTime/MIDNIGHT
+        now                       (LocalTime/now)
+        one-milli-before-midnight (.minus midnight 1 ChronoUnit/MILLIS)]
+    (is (roundtrips? schema [midnight]))
+    (is (roundtrips? schema [now]))
+    (is (roundtrips? schema [one-milli-before-midnight]))))
 
 (deftest test-timestamp-millis
-  (binding [abracad.avro.util/*mangle-names* false]         ;; Because 'timestamp-millis' -> 'timestamp_millis'
-    (let [schema (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
-          epoch          Instant/EPOCH
-          now            (Instant/now)
-          before-epoch   (Instant/ofEpochMilli -1)
-          max-time       (Instant/ofEpochMilli Long/MAX_VALUE)
-          after-max      (.plusMillis max-time 1)
-          min-time       (Instant/ofEpochMilli Long/MIN_VALUE)
-          before-min     (.minusMillis min-time 1)]
-      (is (roundtrips? schema [epoch]))
-      (is (roundtrips? schema [now]))
-      (is (roundtrips? schema [before-epoch]))
-      (is (roundtrips? schema [max-time]))
-      (is (roundtrips? schema [min-time]))
-      (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
-      (is (thrown? ArithmeticException (roundtrips? schema [before-min]))))))
+  (let [schema        (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
+        epoch         Instant/EPOCH
+        now           (Instant/now)
+        before-epoch  (Instant/ofEpochMilli -1)
+        max-time      (Instant/ofEpochMilli Long/MAX_VALUE)
+        after-max     (.plusMillis max-time 1)
+        min-time      (Instant/ofEpochMilli Long/MIN_VALUE)
+        before-min    (.minusMillis min-time 1)]
+    (is (roundtrips? schema [epoch]))
+    (is (roundtrips? schema [now]))
+    (is (roundtrips? schema [before-epoch]))
+    (is (roundtrips? schema [max-time]))
+    (is (roundtrips? schema [min-time]))
+    (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
 
 (deftest test-decmial
-  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
-        fixed-schema (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
+  (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
+        fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
     (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
     (is (roundtrips? fixed-schema [(.setScale (bigdec 5) 6)]))
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))               ;; Scale too small
