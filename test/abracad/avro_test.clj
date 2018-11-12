@@ -1,7 +1,8 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [abracad.avro.conversion :as c])
   (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate LocalTime Instant]
@@ -346,3 +347,7 @@
     (avro/mspit schema path records)
     (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
       (is (= records (seq dfs))))))
+
+(deftest test-must-use-java-conversion-for-correct-logical-type
+  (is (thrown? AssertionError (avro/datum-writer {:schema 'string :conversions {:foo c/uuid-conversion}})))
+  (is (thrown? AssertionError (avro/datum-reader {:schema 'string :conversions {:foo c/uuid-conversion}}))))

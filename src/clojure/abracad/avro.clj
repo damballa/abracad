@@ -129,6 +129,9 @@ provided `types`, and optionally named `name`."
 but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
+(defn ^:private clojure-data [conversions]
+  (ClojureData. (map c/coerce (seq conversions))))                ;; TODO need to map key value and check the java types for KW consistency
+
 ;; TODO documentation update
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
@@ -140,12 +143,11 @@ but the first `n` fields when sorting."
          (not (contains? arg :schema)))
      (datum-reader {:schema arg :conversions c/default-conversions})
      (let [{:keys [schema conversions]} arg
-           conversionVec                (if (nil? conversions) [] conversions) ;; TODO let conversions be a map and then we can merge
            schema                       (if-not (nil? schema) (parse-schema schema))]
        (ClojureDatumReader.
          schema
          schema
-         (ClojureData. (map c/coerce conversionVec))))))
+         (clojure-data conversions)))))
   ([expected actual]
      (ClojureDatumReader.
       (if-not (nil? expected) (parse-schema expected))
@@ -234,11 +236,10 @@ decoded serially from `source`."
          (instance? Schema arg)
          (not (contains? arg :schema)))
      (datum-writer {:schema arg :conversions c/default-conversions})
-     (let [{:keys [schema conversions]} arg
-           conversionVec                (if (nil? conversions) [] conversions)] ;; TODO let conversions be a map and then we can merge
+     (let [{:keys [schema conversions]} arg]
        (ClojureDatumWriter.
          (parse-schema schema)
-         (ClojureData. (map c/coerce conversionVec)))))))
+         (clojure-data conversions))))))
 
 ;; TODO documentation update and add conversions
 (defn data-file-writer
