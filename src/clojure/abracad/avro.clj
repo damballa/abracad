@@ -138,7 +138,7 @@ but the first `n` fields when sorting."
    (if (or
          (instance? Schema arg)
          (not (contains? arg :schema)))
-     (datum-reader {:schema arg :conversions []})
+     (datum-reader {:schema arg :conversions c/default-conversions})
      (let [{:keys [schema conversions]} arg
            conversionVec                (if (nil? conversions) [] conversions) ;; TODO let conversions be a map and then we can merge
            schema                       (if-not (nil? schema) (parse-schema schema))]
@@ -156,7 +156,7 @@ but the first `n` fields when sorting."
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
-  ([expected source](data-file-reader expected [] source))
+  ([expected source](data-file-reader expected c/default-conversions source))
   ([expected conversions source]
    (DataFileReader/openReader
      (seekable-input source) (datum-reader {:schema expected :conversions conversions}))))
@@ -166,7 +166,7 @@ but the first `n` fields when sorting."
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
   ([source] (data-file-stream nil source))
-  ([expected source] (data-file-stream expected [] source))
+  ([expected source] (data-file-stream expected c/default-conversions source))
   ([expected conversions source]
    (DataFileStream.
      (io/input-stream source) (datum-reader {:schema expected :conversions conversions}))))
@@ -233,7 +233,7 @@ decoded serially from `source`."
    (if (or
          (instance? Schema arg)
          (not (contains? arg :schema)))
-     (datum-writer {:schema arg :conversions []})
+     (datum-writer {:schema arg :conversions c/default-conversions})
      (let [{:keys [schema conversions]} arg
            conversionVec                (if (nil? conversions) [] conversions)] ;; TODO let conversions be a map and then we can merge
        (ClojureDatumWriter.

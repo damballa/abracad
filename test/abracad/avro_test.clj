@@ -1,7 +1,6 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
-            [abracad.avro.conversion :as c]
             [clojure.java.io :as io])
   (:import [java.io FileInputStream]
            [java.net InetAddress]
@@ -14,14 +13,14 @@
 ;; TODO update README and doc strings
 (defn roundtrip-binary
   [schema & records]
-  (->> (apply avro/binary-encoded {:schema schema :conversions c/default-conversions} records)
-       (avro/decode-seq {:schema schema :conversions c/default-conversions})))
+  (->> (apply avro/binary-encoded schema records)
+       (avro/decode-seq schema)))
 
 (defn roundtrip-json
   [schema & records]
-  (->> (apply avro/json-encoded {:schema schema :conversions c/default-conversions} records)
+  (->> (apply avro/json-encoded schema records)
        (avro/json-decoder schema)
-       (avro/decode-seq {:schema schema :conversions c/default-conversions})))
+       (avro/decode-seq schema)))
 
 (defn roundtrips?
   ([schema input] (roundtrips? schema input input))
