@@ -14,13 +14,13 @@
 (defn roundtrip-binary
   [schema & records]
   (->> (apply avro/binary-encoded {:schema schema :conversions c/default-conversions} records)
-       (avro/decode-seq schema)))
+       (avro/decode-seq {:schema schema :conversions c/default-conversions})))
 
 (defn roundtrip-json
   [schema & records]
   (->> (apply avro/json-encoded {:schema schema :conversions c/default-conversions} records)
        (avro/json-decoder schema)
-       (avro/decode-seq schema)))
+       (avro/decode-seq {:schema schema :conversions c/default-conversions})))
 
 (defn roundtrips?
   ([schema input] (roundtrips? schema input input))

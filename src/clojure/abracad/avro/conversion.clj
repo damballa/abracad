@@ -13,7 +13,7 @@
 ;; TODO each of the proxy-super invocations causes a compiler error? Perhaps they need type hints?
 ;; TODO all of the remaining function implementations
 (defn coerce [conversion]
-  (if (conversion? conversion) conversion
+  (if (conversion? conversion) conversion                   ;; TODO error if the mapped conversion does not match the java .getLogicalTypeName value
                                (let [type (:class conversion)
                                      logicalType (:logical-type conversion)
                                      int-fns (:int conversion)

@@ -19,6 +19,7 @@
              Encoder EncoderFactory]
            [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
 
+;; TODO review the API and changes. Possibly deprecate the old API and have a new API instead?
 (defn schema?
   "True iff `schema` is an Avro `Schema` instance."
   [schema] (instance? Schema schema))
@@ -128,36 +129,47 @@ provided `types`, and optionally named `name`."
 but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
-;; TODO documentation update and conversions
+;; TODO documentation update
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
   ([] (ClojureDatumReader.))
-  ([schema]
-     (ClojureDatumReader.
-      (if-not (nil? schema) (parse-schema schema))))
+  ([arg]
+   (if (or
+         (instance? Schema arg)
+         (not (contains? arg :schema)))
+     (datum-reader {:schema arg :conversions []})
+     (let [{:keys [schema conversions]} arg
+           conversionVec                (if (nil? conversions) [] conversions) ;; TODO let conversions be a map and then we can merge
+           schema                       (if-not (nil? schema) (parse-schema schema))]
+       (ClojureDatumReader.
+         schema
+         schema
+         (ClojureData. (map c/coerce conversionVec))))))
   ([expected actual]
      (ClojureDatumReader.
       (if-not (nil? expected) (parse-schema expected))
       (if-not (nil? actual) (parse-schema actual)))))
 
-;; TODO documentation update and conversions
+;; TODO documentation update
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
-  ([expected source]
-     (DataFileReader/openReader
-      (seekable-input source) (datum-reader expected))))
+  ([expected source](data-file-reader expected [] source))
+  ([expected conversions source]
+   (DataFileReader/openReader
+     (seekable-input source) (datum-reader {:schema expected :conversions conversions}))))
 
-;; TODO documentation update and conversions
+;; TODO documentation update
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
   ([source] (data-file-stream nil source))
-  ([expected source]
-     (DataFileStream.
-       (io/input-stream source) (datum-reader expected))))
+  ([expected source] (data-file-stream expected [] source))
+  ([expected conversions source]
+   (DataFileStream.
+     (io/input-stream source) (datum-reader {:schema expected :conversions conversions}))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
@@ -189,22 +201,22 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
       (decoder-factory jsonDecoder schema ^InputStream source)
       (decoder-factory jsonDecoder schema ^String source))))
 
-;; TODO documentation update and conversions
+;; TODO documentation update
 (defn decode
   "Decode and return one object from `source` using `schema`.  The
 `source` may be an existing Decoder object or anything on which
 a (binary-encoding) Decoder may be opened."
-  [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
+  [arg source]
+  (let [reader (coerce DatumReader datum-reader arg)
         decoder (coerce Decoder binary-decoder source)]
     (.read reader nil decoder)))
 
-;; TODO documentation update and conversions
+;; TODO documentation update
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
-  [schema source]
-  (let [reader (coerce DatumReader datum-reader schema)
+  [arg source]
+  (let [reader (coerce DatumReader datum-reader arg)
         decoder (coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
@@ -218,7 +230,9 @@ decoded serially from `source`."
   {:tag `ClojureDatumWriter}
   ([] (ClojureDatumWriter.))
   ([arg]
-   (if (not (:schema arg))
+   (if (or
+         (instance? Schema arg)
+         (not (contains? arg :schema)))
      (datum-writer {:schema arg :conversions []})
      (let [{:keys [schema conversions]} arg
            conversionVec                (if (nil? conversions) [] conversions)] ;; TODO let conversions be a map and then we can merge
@@ -226,7 +240,7 @@ decoded serially from `source`."
          (parse-schema schema)
          (ClojureData. (map c/coerce conversionVec)))))))
 
-;; TODO conversions here and documentation update
+;; TODO documentation update and add conversions
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
   {:tag `DataFileWriter}

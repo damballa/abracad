@@ -31,18 +31,23 @@ private static class Vars {
 // TODO make types configurable and move to clojure when all tests working
 public
 ClojureDatumReader() {
-    super(null, null, LogicalTypes.DEFAULT_LOGICAL_TYPES);
+    super(null, null);
 }
 
 public
 ClojureDatumReader(Schema schema) {
-    super(schema, schema, LogicalTypes.DEFAULT_LOGICAL_TYPES);
+    super(schema, schema);
 }
 
 public
 ClojureDatumReader(Schema writer, Schema reader) {
-    super(writer, reader, LogicalTypes.DEFAULT_LOGICAL_TYPES);
+    super(writer, reader);
 }
+
+public
+ClojureDatumReader(Schema writer, Schema reader, ClojureData data) {
+        super(writer, reader, data);
+    }
 
 // TODO this seems wrong, is causing bigdecimal issues :(
 @Override
