@@ -52,13 +52,13 @@ get() {
 @Override
 public DatumReader
 createDatumReader(Schema schema) {
-  return new ClojureDatumReader(schema, schema);
+  return new ClojureDatumReader(schema, schema, this);
 }
 
 @Override
 public DatumReader
 createDatumReader(Schema writer, Schema reader) {
-  return new ClojureDatumReader(writer, reader);
+  return new ClojureDatumReader(writer, reader, this);
 }
 
 @Override

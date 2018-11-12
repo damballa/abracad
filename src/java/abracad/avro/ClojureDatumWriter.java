@@ -103,7 +103,11 @@ writeBytes(Object datum, Encoder out)
 protected void
 writeFixed(Schema schema, Object datum, Encoder out)
         throws IOException {
-    Vars.writeFixed.invoke(this, schema, datum, out);
+    if(schema.getLogicalType() != null) {
+        super.writeFixed(schema, datum, out);
+    } else {
+        Vars.writeFixed.invoke(this, schema, datum, out);
+    }
 }
 
 }

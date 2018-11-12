@@ -7,7 +7,6 @@
            (abracad.avro KeywordLogicalTypeFactory)))
 
 ;; TODO conversions in a map lt -> conversion so you can merge.
-;; TODO should be global binding dynamic thing?? Or just pass in logical types?
 (defn conversion? [x]
   (instance? Conversion x))
 

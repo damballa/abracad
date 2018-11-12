@@ -95,6 +95,9 @@ readString(Object old, Schema expected, Decoder in)
 protected Object
 readFixed(Object old, Schema expected, Decoder in)
         throws IOException {
+    if(expected.getLogicalType() != null) {
+        return super.readFixed(old, expected, in);
+    }
     return Vars.readFixed.invoke(this, expected, in);
 }
 

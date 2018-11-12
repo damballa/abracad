@@ -6,7 +6,7 @@
   (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate LocalTime Instant]
-           [org.apache.avro SchemaParseException AvroTypeException]
+           [org.apache.avro SchemaParseException AvroTypeException Schema LogicalTypes Schema$Parser]
            [clojure.lang ExceptionInfo]
            (java.util UUID)
            (java.time.temporal ChronoUnit)))
@@ -155,12 +155,16 @@
       (is (thrown? ArithmeticException (roundtrips? schema [before-min]))))))
 
 (deftest test-decmial
-  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})]
+  (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
+        fixed-schema (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
     (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
+    (is (roundtrips? fixed-schema [(.setScale (bigdec 5) 6)]))
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))               ;; Scale too small
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 5.12345)])))               ;; Scale too small
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))           ;; Scale too big
-    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)]))))) ;; More than precision
-;; TODO do we need to test with GenericFixed also? It seems that the Fixed schema does not parse with decimal type :/
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 5.123456789)])))           ;; Scale too big
+    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)])))   ;; More than precision
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 123456789012.123456)]))))) ;; More than precision
 
 (deftest test-keyword
   (let [schema (avro/parse-schema {:type 'string :logicalType :keyword})]
@@ -173,7 +177,6 @@
         stringUUID  "a7b168ce-d4ff-49a2-a7a5-e65ac06dbe67"]
     (is (roundtrips? schema [uuid]))
     (is (roundtrips? schema [(UUID/fromString stringUUID)] [stringUUID]))))
-
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}
