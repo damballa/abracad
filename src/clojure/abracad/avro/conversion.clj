@@ -1,7 +1,8 @@
 (ns abracad.avro.conversion
   "Logical Type converter implementations"
-  (:import (java.time LocalDate Instant)
-           (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion)))
+  (:import (java.time LocalDate LocalTime Instant)
+           (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion)
+           (java.time.temporal ChronoField ChronoUnit)))
 
 ;; TODO conversions in a map lt -> conversion so you can merge.
 ;; TODO should be global binding dynamic thing?? Or just pass in logical types?
@@ -53,21 +54,24 @@
    :int          {:from (fn [day ^Integer _ _] (LocalDate/ofEpochDay day))
                   :to   (fn [day ^LocalDate _ _] (Math/toIntExact (.toEpochDay day)))}})
 
-;; TODO localtime time millis & micros conversion
+(def time-conversion
+  {:logical-type "time-millis"
+   :class        LocalTime
+   :int          {:from (fn [time ^Integer _ _] (.plus LocalTime/MIDNIGHT (long time) ChronoUnit/MILLIS))
+                  :to   (fn [time ^LocalTime _ _] (.get time ChronoField/MILLI_OF_DAY))}})
 
 (def timestamp-conversion
   {:logical-type "timestamp-millis"
    :class        Instant
    :long         {:from (fn [millis ^Long _ _] (Instant/ofEpochMilli millis))
                   :to   (fn [instant ^Instant _ _] (.toEpochMilli instant))}})
-;; TODO timestamp micros conversion
 
 (def uuid-conversion (Conversions$UUIDConversion.))
 
 (def decimal-conversion (Conversions$DecimalConversion.))
 
 (def default-conversions
-  [date-conversion, timestamp-conversion, uuid-conversion, decimal-conversion])
+  [date-conversion, time-conversion, timestamp-conversion, uuid-conversion, decimal-conversion])
 
 ;; TODO conversion for decimal that rounds and sets scale before conversion
 ;; TODO keyword logical type and conversion

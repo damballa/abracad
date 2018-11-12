@@ -39,7 +39,6 @@ ClojureData(ClassLoader classLoader) {
 public
 ClojureData(List<Conversion<?>> conversions) {
     this();
-    // TODO better way to do this? Can't really see a way since the value isn't exposed in a constructor
     for(Conversion<?> conversion: conversions) {
         addLogicalTypeConversion(conversion);
     }

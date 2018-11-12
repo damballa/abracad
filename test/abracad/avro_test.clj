@@ -5,10 +5,11 @@
             [clojure.java.io :as io])
   (:import [java.io FileInputStream]
            [java.net InetAddress]
-           [java.time LocalDate Instant]
+           [java.time LocalDate LocalTime Instant]
            [org.apache.avro SchemaParseException AvroTypeException]
            [clojure.lang ExceptionInfo]
-           (java.util UUID)))
+           (java.util UUID)
+           (java.time.temporal ChronoUnit)))
 
 ;; TODO update README and doc strings
 (defn roundtrip-binary
@@ -125,8 +126,18 @@
     (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
     (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
 
+(deftest test-time
+  (binding [abracad.avro.util/*mangle-names* false]         ;; Because 'time-millis' -> 'time_millis'
+    (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})
+          midnight                  LocalTime/MIDNIGHT
+          now                       (LocalTime/now)
+          one-milli-before-midnight (.minus midnight 1 ChronoUnit/MILLIS)]
+      (is (roundtrips? schema [midnight]))
+      (is (roundtrips? schema [now]))
+      (is (roundtrips? schema [one-milli-before-midnight])))))
+
 (deftest test-timestamp-millis
-  (binding [abracad.avro.util/*mangle-names* false]         ;; Becaususe 'timestamp-millis' -> 'timestamp_millis'
+  (binding [abracad.avro.util/*mangle-names* false]         ;; Because 'timestamp-millis' -> 'timestamp_millis'
     (let [schema (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
           epoch          Instant/EPOCH
           now            (Instant/now)
