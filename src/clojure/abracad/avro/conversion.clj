@@ -3,7 +3,7 @@
   (:import (java.time LocalDate LocalTime Instant)
            (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion LogicalTypes LogicalType Schema LogicalTypes$Decimal)
            (java.time.temporal ChronoField ChronoUnit)
-           (clojure.lang Keyword)
+           (clojure.lang Keyword APersistentMap)
            (abracad.avro KeywordLogicalTypeFactory)
            (java.lang.reflect Field)
            (java.math RoundingMode)
@@ -13,7 +13,7 @@
 (defn conversion? [x]
   (instance? Conversion x))
 
-(defn java-conversion [logical-type conversion]
+(defn java-conversion [logical-type ^Conversion conversion]
   (let [expected-type (.getLogicalTypeName conversion)]
     (assert
       (= logical-type expected-type)
@@ -114,9 +114,9 @@
        (into {})))
 
 (defn decimal-conversion-rounded [rounding-mode]
-  (let [valid-modes         (valid-rounding-modes)
-        ^RoundingMode mode  (.get valid-modes (name rounding-mode))
-        _                   (assert (not (nil? mode)) (str "Invalid rounding mode (" rounding-mode ") passed. Must be one of: " (keys valid-modes)))]
+  (let [^APersistentMap valid-modes         (valid-rounding-modes)
+        ^RoundingMode mode                  (.get valid-modes (name rounding-mode))
+        _                                   (assert (not (nil? mode)) (str "Invalid rounding mode (" rounding-mode ") passed. Must be one of: " (keys valid-modes)))]
     {:class BigDecimal
      :bytes {:from (fn [^ByteBuffer bytes ^Schema schema ^LogicalType logicalType] (.fromBytes decimal-conversion bytes schema logicalType))
              :to   (fn [^BigDecimal decimal ^Schema schema ^LogicalTypes$Decimal logicalType]
@@ -129,8 +129,8 @@
 
 (def keyword-conversion
   {:class        Keyword
-   :string          {:from (fn [^String name _ _] (keyword name))
-                     :to   (fn [^Keyword keyword _ _] (name keyword))}})
+   :string       {:from (fn [^String name _ _] (keyword name))
+                  :to   (fn [^Keyword keyword _ _] (name keyword))}})
 
 (def default-conversions
   {:date              date-conversion

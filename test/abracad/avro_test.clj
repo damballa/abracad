@@ -195,6 +195,12 @@
     (is (roundtrips? schema [:anything]))
     (is (roundtrips? schema [:foo]))))
 
+(deftest test-keyword-must-be-string
+  (is (nil? (.getLogicalType (avro/parse-schema {:type 'int :logicalType :keyword}))))
+  (is (nil? (.getLogicalType (avro/parse-schema {:type 'boolean :logicalType :keyword}))))
+  (is (nil? (.getLogicalType (avro/parse-schema {:type 'long :logicalType :keyword}))))
+  (is (nil? (.getLogicalType (avro/parse-schema {:type 'float :logicalType :keyword})))))
+
 (deftest test-uuid
   (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
         uuid        (UUID/randomUUID)

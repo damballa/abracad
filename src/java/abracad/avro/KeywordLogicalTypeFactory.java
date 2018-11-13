@@ -19,5 +19,13 @@ public class KeywordLogicalTypeFactory implements LogicalTypeFactory {
         public KeywordLogicalType() {
             super(TYPE);
         }
+
+        @Override
+        public void validate(Schema schema) {
+            super.validate(schema);
+            if (schema.getType() != Schema.Type.STRING) {
+                throw new IllegalArgumentException("Keyword can only be used with an underlying string type");
+            }
+        }
     }
 }
