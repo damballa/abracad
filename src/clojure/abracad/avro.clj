@@ -287,20 +287,20 @@ via `encode`."
 
 (defn spit
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."
-  [schema f content & opts]
+  [schema f content & {:as opts}]
   (let [codec (get opts :codec "snappy")]
     (with-open [dfw ^DataFileWriter (data-file-writer codec schema f)]
       (.append dfw content))))
 
 (defn slurp
   "Like core `slurp`, but reads Avro content from `f`."
-  [f & opts]
+  [f]
   (with-open [dfr ^DataFileReader (data-file-reader f)]
     (.next dfr)))
 
 (defn mspit
   "Like Avro `spit`, but emits `content` as a sequence of records."
-  [schema f content & opts]
+  [schema f content & {:as opts}]
   (let [codec (get opts :codec "snappy")]
     (with-open [dfw ^DataFileWriter (data-file-writer codec schema f)]
       (doseq [record content]
@@ -308,7 +308,7 @@ via `encode`."
 
 (defn mslurp
   "Like Avro `slurp`, but produces a sequence of records."
-  [f & opts]
+  [f]
   (with-open [dfr ^DataFileReader (data-file-reader f)]
     (into [] dfr)))
 
