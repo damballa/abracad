@@ -6,7 +6,7 @@
   (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate LocalTime Instant]
-           [org.apache.avro SchemaParseException AvroTypeException Schema LogicalTypes Schema$Parser]
+           [org.apache.avro SchemaParseException AvroTypeException]
            [clojure.lang ExceptionInfo]
            (java.util UUID)
            (java.time.temporal ChronoUnit)))

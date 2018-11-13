@@ -27,15 +27,19 @@
     `(let [~thissym ~'this]
        (proxy-call-with-super (fn [] (. ~thissym ~meth ~@args)) ~thissym ~(name meth)))))
 
-;; TODO all of the remaining function implementations
 ;; TODO spice up the destructuring, feels like there should be a nicer way
+;; from/to not implemented yet for arrays, maps or records. Only add these if requested. Possible array use case: rational/complex numbers?
 (defn clojure-conversion [logical-type conversion]
   (let [type        (:class conversion)
         int-fns     (:int conversion)
         long-fns    (:long conversion)
         string-fns  (:string conversion)
         bytes-fns   (:bytes conversion)
-        fixed-fns   (:fixed conversion)]
+        fixed-fns   (:fixed conversion)
+        boolean-fns (:boolean conversion)
+        float-fns   (:float conversion)
+        double-fns  (:double conversion)
+        enum-fns    (:enum conversion)]
     (proxy [Conversion] []
       (getConvertedType [] type)
       (getLogicalTypeName []  logical-type)
@@ -78,7 +82,39 @@
       (toFixed [data schema lt] (let [to (:to fixed-fns)]
                                   (if (nil? to)
                                     (proxy-super-with-class Conversion toFixed data schema lt)
-                                    (to data schema lt)))))))
+                                    (to data schema lt))))
+      (fromBoolean [boolean schema lt] (let [from (:from boolean-fns)]
+                                         (if (nil? from)
+                                           (proxy-super-with-class Conversion fromBoolean boolean schema lt)
+                                           (from boolean schema lt))))
+      (toBoolean [data schema lt] (let [to (:to boolean-fns)]
+                                    (if (nil? to)
+                                      (proxy-super-with-class Conversion toBoolean data schema lt)
+                                      (to data schema lt))))
+      (fromFloat [float schema lt] (let [from (:from float-fns)]
+                                     (if (nil? from)
+                                       (proxy-super-with-class Conversion fromFloat float schema lt)
+                                       (from float schema lt))))
+      (toFloat [data schema lt] (let [to (:to float-fns)]
+                                  (if (nil? to)
+                                    (proxy-super-with-class Conversion toFloat data schema lt)
+                                    (to data schema lt))))
+      (fromDouble [double schema lt] (let [from (:from double-fns)]
+                                       (if (nil? from)
+                                         (proxy-super-with-class Conversion fromDouble double schema lt)
+                                         (from double schema lt))))
+      (toDouble [data schema lt] (let [to (:to double-fns)]
+                                   (if (nil? to)
+                                     (proxy-super-with-class Conversion toDouble data schema lt)
+                                     (to data schema lt))))
+      (fromEnumSymbol [enum-symbol schema lt] (let [from (:from enum-fns)]
+                                                (if (nil? from)
+                                                  (proxy-super-with-class Conversion fromEnumSymbol enum-symbol schema lt)
+                                                  (from enum-symbol schema lt))))
+      (toEnumSymbol [data schema lt] (let [to (:to enum-fns)]
+                                       (if (nil? to)
+                                         (proxy-super-with-class Conversion toEnumSymbol data schema lt)
+                                         (to data schema lt)))))))
 
 (defn coerce [[logical-type conversion]]
   (let [logical-type-name (name logical-type)]
