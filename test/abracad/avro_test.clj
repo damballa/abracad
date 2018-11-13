@@ -29,6 +29,18 @@
      (and (= expected (apply roundtrip-binary schema input))
           (= expected (apply roundtrip-json schema input)))))
 
+(defn roundtrip-json-with-conversions
+  [schema conversions & records]
+  (->> (apply avro/json-encoded {:schema schema :conversions conversions} records)
+       (avro/json-decoder schema)
+       (avro/decode-seq {:schema schema :conversions conversions})))
+
+(defn roundtrips-with-conversions?
+  ([schema conversions input] (roundtrips-with-conversions? schema conversions input input))
+  ([schema conversions expected input]
+   (and (= expected (apply roundtrip-binary {:schema schema :conversions conversions} input))
+        (= expected (apply roundtrip-json-with-conversions schema conversions input)))))
+
 (defrecord Example [foo-foo bar])
 
 (defrecord SubExample [^long baz])
@@ -152,7 +164,7 @@
     (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
     (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
 
-(deftest test-decmial
+(deftest test-decimal
   (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
         fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
     (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
@@ -163,6 +175,20 @@
     (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 5.123456789)])))           ;; Scale too big
     (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)])))   ;; More than precision
     (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 123456789012.123456)]))))) ;; More than precision
+
+(deftest test-decimal-with-rounding
+  (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 8})
+        fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 8})
+        with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :half-up)})]
+    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5)]))
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5)]))
+    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5.12345)]))
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5.12345)]))
+    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5.123457) (bigdec 5.123456)] [(bigdec 5.1234565) (bigdec 5.12345649)]))       ;; Rounded [half up, down]
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5.123457) (bigdec 5.123456)] [(bigdec 5.1234565) (bigdec 5.12345649)])))) ;; Rounded [half up, down]
+
+(deftest decimal-rounding-must-have-valid-mode
+  (is (thrown? AssertionError (c/decimal-conversion-rounded :foo))))
 
 (deftest test-keyword
   (let [schema (avro/parse-schema {:type 'string :logicalType :keyword})]
