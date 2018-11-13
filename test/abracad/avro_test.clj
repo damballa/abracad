@@ -382,3 +382,30 @@
 (deftest test-must-use-java-conversion-for-correct-logical-type
   (is (thrown? AssertionError (avro/datum-writer 'string {:foo c/uuid-conversion})))
   (is (thrown? AssertionError (avro/datum-reader 'string {:foo c/uuid-conversion}))))
+
+(deftest test-with-logical-types
+  (let [schema (avro/parse-schema
+                 {:type      :record
+                  :name      :Person
+                  :namespace "com.test"
+                  :fields    [{:name :message-timestamp :type {:type 'long :logicalType :timestamp-millis}}
+                              {:name :firstName :type 'string}
+                              {:name :lastName :type 'string}
+                              {:name :dateOfBirth :type {:type 'int :logicalType :date}}
+                              {:name :height :type {:type :bytes :logicalType :decimal :scale 2 :precision 12}}
+                              {:name :candles :type [{:type 'int}
+                                                     {:type 'string :logicalType :keyword}]}]})
+        records [{:message-timestamp (Instant/now)
+                  :firstName   "Ronnie",
+                  :lastName    "Corbet",
+                  :dateOfBirth (LocalDate/of 1930 12 4)
+                  :height      (bigdec 1.55)
+                  :candles     4}
+                 {:message-timestamp (Instant/ofEpochMilli 1234567890)
+                  :firstName   "Ronnie",
+                  :lastName    "Barker",
+                  :dateOfBirth (LocalDate/of 1929 9 25)
+                  :height      (bigdec 1.72)
+                  :candles     :fork}]
+        with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :unnecessary)})]
+    (is (roundtrips-with-conversions? schema with-rounding records))))

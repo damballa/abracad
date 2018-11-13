@@ -88,7 +88,9 @@ writeArray(Schema schema, Object datum, Encoder out)
 protected int
 resolveUnion(Schema union, Object datum) {
     Object i = Vars.resolveUnion.invoke(this, union, datum);
-    if (i == null) throw new UnresolvedUnionException(union, datum);
+    if (i == null) {
+        return super.resolveUnion(union, datum);
+    }
     return RT.intCast(i);
 }
 

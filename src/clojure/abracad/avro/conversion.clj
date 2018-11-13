@@ -17,11 +17,11 @@
   (let [expected-type (.getLogicalTypeName conversion)]
     (assert
       (= logical-type expected-type)
-      (str "Java Logical Type Conversions must be keyed agains the logical type they can handle. Key " logical-type
+      (str "Java Logical Type Conversions must be keyed against the logical type they can handle. Key " logical-type
            " was used instead of " expected-type " for " conversion)))
   conversion)
 
-;; Like proxy super but allows using a type hint to help reflection to avoid compiler warnings of "call to method toInt can't be resolved (target class is unknown)."
+;; Like proxy-super but allows using a type hint to help reflection to avoid compiler warnings of "call to method toInt can't be resolved (target class is unknown)."
 (defmacro proxy-super-with-class [class meth & args]
   (let [thissym (with-meta (gensym) {:tag class})]
     `(let [~thissym ~'this]
@@ -156,7 +156,7 @@
 (defn decimal-conversion-rounded [rounding-mode]
   (let [^APersistentMap valid-modes         (valid-rounding-modes)
         ^RoundingMode mode                  (.get valid-modes (name rounding-mode))
-        _                                   (assert (not (nil? mode)) (str "Invalid rounding mode (" rounding-mode ") passed. Must be one of: " (keys valid-modes)))]
+        _                                   (assert (not (nil? mode)) (str "Invalid rounding mode (" (name rounding-mode) ") passed. Must be one of: " (keys valid-modes)))]
     {:class BigDecimal
      :bytes {:from (fn [^ByteBuffer bytes ^Schema schema ^LogicalType logicalType] (.fromBytes decimal-conversion bytes schema logicalType))
              :to   (fn [^BigDecimal decimal ^Schema schema ^LogicalTypes$Decimal logicalType]
