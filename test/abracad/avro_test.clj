@@ -11,7 +11,6 @@
            (java.util UUID)
            (java.time.temporal ChronoUnit)))
 
-;; TODO update README and doc strings
 (defn roundtrip-binary
   [schema & records]
   (->> (apply avro/binary-encoded schema records)

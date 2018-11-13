@@ -176,6 +176,34 @@ schemas.
 ;;=> {:foo [bar "baz" 1337]}
 ```
 
+### Logical Types
+
+Abracad supports [avro logical types](https://avro.apache.org/docs/1.8.0/spec.html#Logical+Types). 
+Out of the box it supports:
+
+* `timestamp-millis` as `java.time.Instant`
+* `time-millis` as `java.time.LocalTime`
+* `date` as `java.time.LocalDate`
+* `uuid` as `java.util.UUID`
+* `decimal` as `java.math.BigDecimal`. This implementation requires the scale of the `BigDecimal` to be set
+correctly prior to serialisation, there is an implementation `(abracad.avro.conversion/decimal-conversion-rounded rounding-mode)`
+that will set the scale and round using the given mode when serialising.
+* New "keyword" logical type: `{"type": "string", "logicalType": "keyword"}` as a `Keyword`.
+
+You can add your own conversions or override the defaults defaults by passing a map of
+`logical-type -> conversion` e.g. 
+
+```clojure
+;; Custom data type that can be turned into an epoch day
+(def my-date-converter {:class MyDate
+                        :int   {:from (fn [^Integer day _ _] (MyDate. day))
+                                :to   (fn [^MyDate day _ _] (.asEpochDay day))}})
+
+(avro/datum-writer schema 
+  (merge conversion/default-conversions {:decimal (conversion/decimal-conversion-rounded :half-up)
+                                         :date    my-date-converter}))
+```
+
 ### Hadoop MapReduce integration
 
 Avro 1.7.5 and later supports configurable “data models” for datum

@@ -19,7 +19,6 @@
              Encoder EncoderFactory]
            [abracad.avro ClojureDatumReader ClojureDatumWriter ClojureData]))
 
-;; TODO review the API and changes. Possibly deprecate the old API and have a new API instead?
 (defn schema?
   "True iff `schema` is an Avro `Schema` instance."
   [schema] (instance? Schema schema))
@@ -200,17 +199,19 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
       (decoder-factory jsonDecoder schema ^InputStream source)
       (decoder-factory jsonDecoder schema ^String source))))
 
-;; TODO documentation update
 (defn decode
-  "Decode and return one object from `source` using `schema`.  The
+  "Decode and return one object from `source` using `arg`.  The
 `source` may be an existing Decoder object or anything on which
-a (binary-encoding) Decoder may be opened."
+a (binary-encoding) Decoder may be opened.
+
+The `arg` may either be a schema to be parsed or a map with
+shape {:schema schema :conversions conversion-map} where
+conversion-map is a map of logical type conversions."
   [arg source]
   (let [reader (coerce DatumReader datum-reader-arg arg)
         decoder (coerce Decoder binary-decoder source)]
     (.read reader nil decoder)))
 
-;; TODO documentation update
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
@@ -280,11 +281,15 @@ decoded serially from `source`."
   (let [schema (parse-schema schema)]
     (encoder-factory jsonEncoder schema ^OutputStream sink)))
 
-;; TODO documentation update
+
 (defn encode
-  "Serially encode each record in `records` to `sink` using `schema`.
+  "Serially encode each record in `records` to `sink` using `arg`.
 The `sink` may be an existing Encoder object, or anything on which
-a (binary-encoding) Encoder may be opened."
+a (binary-encoding) Encoder may be opened.
+
+The `arg` may either be a schema to be parsed or a map with
+shape {:schema schema :conversions conversion-map} where
+conversion-map is a map of logical type conversions."
   [arg sink & records]
   (let [writer (coerce DatumWriter datum-writer-arg arg)
         encoder (coerce Encoder binary-encoder sink)]
@@ -292,18 +297,16 @@ a (binary-encoding) Encoder may be opened."
       (.write writer record encoder))
     (.flush encoder)))
 
-;; TODO documentation update
 (defn binary-encoded
-  "Return bytes produced by binary-encoding `records` with `schema`
+  "Return bytes produced by binary-encoding `records` with `arg`
 via `encode`."
   [arg & records]
   (with-open [out (ByteArrayOutputStream.)]
     (apply encode arg out records)
     (.toByteArray out)))
 
-;; TODO documentation update
 (defn json-encoded
-  "Return string produced by JSON-encoding `records` with `schema`
+  "Return string produced by JSON-encoding `records` with `arg`
 via `encode`."
   [arg & records]
   (with-open [out (ByteArrayOutputStream.)]

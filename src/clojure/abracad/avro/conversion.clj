@@ -27,7 +27,6 @@
     `(let [~thissym ~'this]
        (proxy-call-with-super (fn [] (. ~thissym ~meth ~@args)) ~thissym ~(name meth)))))
 
-;; TODO spice up the destructuring, feels like there should be a nicer way
 ;; from/to not implemented yet for arrays, maps or records. Only add these if requested. Possible array use case: rational/complex numbers?
 (defn clojure-conversion [logical-type conversion]
   (let [type        (:class conversion)
@@ -181,6 +180,5 @@
    :decimal           decimal-conversion
    :keyword           keyword-conversion})
 
-;; TODO allow custom logical types to be registered using a global dynamic?
 ;; Register the custom "keyword" logical type
 (LogicalTypes/register KeywordLogicalTypeFactory/TYPE (KeywordLogicalTypeFactory.))
