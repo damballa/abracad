@@ -21,9 +21,14 @@
            " was used instead of " expected-type " for " conversion)))
   conversion)
 
+;; Like proxy super but allows using a type hint to help reflection to avoid compiler warnings of "call to method toInt can't be resolved (target class is unknown)."
+(defmacro proxy-super-with-class [class meth & args]
+  (let [thissym (with-meta (gensym) {:tag class})]
+    `(let [~thissym ~'this]
+       (proxy-call-with-super (fn [] (. ~thissym ~meth ~@args)) ~thissym ~(name meth)))))
+
 ;; TODO all of the remaining function implementations
 ;; TODO spice up the destructuring, feels like there should be a nicer way
-;; TODO each of the proxy-super invocations causes a compiler error? Perhaps they need type hints?
 (defn clojure-conversion [logical-type conversion]
   (let [type        (:class conversion)
         int-fns     (:int conversion)
@@ -36,43 +41,43 @@
       (getLogicalTypeName []  logical-type)
       (fromInt [int schema lt] (let [from (:from int-fns)]
                                  (if (nil? from)
-                                   (proxy-super fromInt int schema lt)
+                                   (proxy-super-with-class Conversion fromInt int schema lt)
                                    (from int schema lt))))
       (toInt [data schema lt] (let [to (:to int-fns)]
                                 (if (nil? to)
-                                  (proxy-super toInt data schema lt)
+                                  (proxy-super-with-class Conversion toInt data schema lt)
                                   (to data schema lt))))
       (fromLong [long schema lt] (let [from (:from long-fns)]
                                    (if (nil? from)
-                                     (proxy-super fromLong long schema lt)
+                                     (proxy-super-with-class Conversion fromLong long schema lt)
                                      (from long schema lt))))
       (toLong [data schema lt] (let [to (:to long-fns)]
                                  (if (nil? to)
-                                   (proxy-super toLong data schema lt)
+                                   (proxy-super-with-class Conversion toLong data schema lt)
                                    (to data schema lt))))
       (fromCharSequence [string schema lt] (let [from (:from string-fns)]
                                              (if (nil? from)
-                                               (proxy-super fromCharSequence string schema lt)
+                                               (proxy-super-with-class Conversion fromCharSequence string schema lt)
                                                (from string schema lt))))
       (toCharSequence [data schema lt] (let [to (:to string-fns)]
                                          (if (nil? to)
-                                           (proxy-super toCharSequence data schema lt)
+                                           (proxy-super-with-class Conversion toCharSequence data schema lt)
                                            (to data schema lt))))
       (fromBytes [bytes schema lt] (let [from (:from bytes-fns)]
                                      (if (nil? from)
-                                       (proxy-super fromBytes bytes schema lt)
+                                       (proxy-super-with-class Conversion fromBytes bytes schema lt)
                                        (from bytes schema lt))))
       (toBytes [data schema lt] (let [to (:to bytes-fns)]
                                          (if (nil? to)
-                                           (proxy-super toBytes data schema lt)
+                                           (proxy-super-with-class Conversion toBytes data schema lt)
                                            (to data schema lt))))
       (fromFixed [fixed schema lt] (let [from (:from fixed-fns)]
                                      (if (nil? from)
-                                       (proxy-super fromFixed fixed schema lt)
+                                       (proxy-super-with-class Conversion fromFixed fixed schema lt)
                                        (from fixed schema lt))))
       (toFixed [data schema lt] (let [to (:to fixed-fns)]
                                   (if (nil? to)
-                                    (proxy-super toFixed data schema lt)
+                                    (proxy-super-with-class Conversion toFixed data schema lt)
                                     (to data schema lt)))))))
 
 (defn coerce [[logical-type conversion]]

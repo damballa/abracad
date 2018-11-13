@@ -32,11 +32,6 @@ ClojureData() {
 }
 
 public
-ClojureData(ClassLoader classLoader) {
-    super(classLoader);
-}
-
-public
 ClojureData(List<Conversion<?>> conversions) {
     this();
     for(Conversion<?> conversion: conversions) {
