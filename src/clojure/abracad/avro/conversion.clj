@@ -29,18 +29,18 @@
 
 ;; from/to not implemented yet for arrays, maps or records. Only add these if requested. Possible array use case: rational/complex numbers?
 (defn clojure-conversion [logical-type conversion]
-  (let [type        (:class conversion)
-        int-fns     (:int conversion)
-        long-fns    (:long conversion)
-        string-fns  (:string conversion)
-        bytes-fns   (:bytes conversion)
-        fixed-fns   (:fixed conversion)
-        boolean-fns (:boolean conversion)
-        float-fns   (:float conversion)
-        double-fns  (:double conversion)
-        enum-fns    (:enum conversion)]
+  (let [{conversion-class :class
+         int-fns          :int
+         long-fns         :long
+         string-fns       :string
+         bytes-fns        :bytes
+         fixed-fns        :fixed
+         boolean-fns      :boolean
+         float-fns        :float
+         double-fns       :double
+         enum-fns         :enum} conversion]
     (proxy [Conversion] []
-      (getConvertedType [] type)
+      (getConvertedType [] conversion-class)
       (getLogicalTypeName []  logical-type)
       (fromInt [int schema lt] (let [from (:from int-fns)]
                                  (if (nil? from)
