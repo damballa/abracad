@@ -123,17 +123,17 @@
 
 (def date-conversion
   {:class        LocalDate
-   :int          {:from (fn [^Integer day _ _] (LocalDate/ofEpochDay day))
+   :int          {:from (fn [day _ _] (LocalDate/ofEpochDay day))
                   :to   (fn [^LocalDate day _ _] (Math/toIntExact (.toEpochDay day)))}})
 
 (def time-conversion
   {:class        LocalTime
-   :int          {:from (fn [^Integer time _ _] (.plus LocalTime/MIDNIGHT (long time) ChronoUnit/MILLIS))
+   :int          {:from (fn [time _ _] (.plus LocalTime/MIDNIGHT (long time) ChronoUnit/MILLIS))
                   :to   (fn [^LocalTime time _ _] (.get time ChronoField/MILLI_OF_DAY))}})
 
 (def timestamp-conversion
   {:class        Instant
-   :long         {:from (fn [^Long millis _ _] (Instant/ofEpochMilli millis))
+   :long         {:from (fn [millis _ _] (Instant/ofEpochMilli millis))
                   :to   (fn [^Instant instant _ _] (.toEpochMilli instant))}})
 
 (def uuid-conversion (Conversions$UUIDConversion.))
@@ -159,18 +159,18 @@
         _                                   (assert (not (nil? mode)) (str "Invalid rounding mode (" (name rounding-mode) ") passed. Must be one of: " (keys valid-modes)))]
     {:class BigDecimal
      :bytes {:from (fn [^ByteBuffer bytes ^Schema schema ^LogicalType logicalType] (.fromBytes decimal-conversion bytes schema logicalType))
-             :to   (fn [^BigDecimal decimal ^Schema schema ^LogicalTypes$Decimal logicalType]
+             :to   (fn [^BigDecimal decimal schema ^LogicalTypes$Decimal logicalType]
                      (let [scaled (.setScale decimal (.getScale logicalType) mode)]
                        (.toBytes decimal-conversion scaled schema logicalType)))}
      :fixed {:from (fn [^GenericFixed bytes ^Schema schema ^LogicalType logicalType] (.fromFixed decimal-conversion bytes schema logicalType))
-             :to   (fn [^BigDecimal decimal ^Schema schema ^LogicalTypes$Decimal logicalType]
+             :to   (fn [^BigDecimal decimal schema ^LogicalTypes$Decimal logicalType]
                      (let [scaled (.setScale decimal (.getScale logicalType) mode)]
                        (.toFixed decimal-conversion scaled schema logicalType)))}}))
 
 (def keyword-conversion
   {:class        Keyword
-   :string       {:from (fn [^String name _ _] (keyword name))
-                  :to   (fn [^Keyword keyword _ _] (name keyword))}})
+   :string       {:from (fn [name _ _] (keyword name))
+                  :to   (fn [keyword _ _] (name keyword))}})
 
 (def default-conversions
   {:date              date-conversion

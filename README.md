@@ -196,8 +196,8 @@ You can add your own conversions or override the defaults defaults by passing a 
 ```clojure
 ;; Custom data type that can be turned into an epoch day
 (def my-date-converter {:class MyDate
-                        :int   {:from (fn [^Integer day _ _] (MyDate. day))
-                                :to   (fn [^MyDate day _ _] (.asEpochDay day))}})
+                        :int   {:from (fn [day _ _] (MyDate. day))
+                                :to   (fn [day _ _] (.asEpochDay day))}})
 
 (avro/datum-writer schema 
   (merge conversion/default-conversions {:decimal (conversion/decimal-conversion-rounded :half-up)
