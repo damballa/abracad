@@ -10,7 +10,7 @@
            [clojure.lang Named Sequential IRecord Indexed]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
-           [org.apache.avro.generic GenericRecord]
+           [org.apache.avro.generic GenericRecord GenericFixed]
            [abracad.avro ClojureDatumWriter ArrayAccessor]))
 
 (def ^:const edn-element
@@ -70,6 +70,14 @@ record serialization."
     (.writeBytes encoder bytes))
   (emit-fixed [^ByteBuffer bytes ^Encoder encoder]
     (.writeFixed encoder bytes)))
+
+(extend-type GenericFixed
+  HandleBytes
+  (count-bytes [^GenericFixed fixed] (alength (.bytes fixed)))
+  (emit-bytes [^GenericFixed fixed ^Encoder encoder]
+    (.writeBytes encoder (.bytes fixed)))
+  (emit-fixed [^GenericFixed fixed ^Encoder encoder]
+    (.writeFixed encoder (.bytes fixed))))
 
 (defn schema-error!
   [^Schema schema datum]
@@ -220,13 +228,13 @@ record serialization."
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
 (defn avro-bytes?
-  [^Schema schema datum]
+  [^Schema datum]
   (or (instance? bytes-class datum)
       (instance? ByteBuffer datum)))
 
 (defn avro-fixed?
   [^Schema schema datum]
-  (and (avro-bytes? schema datum)
+  (and (or (avro-bytes? datum))
        (= (.getFixedSize schema) (count-bytes datum))))
 
 (defn schema-match?
@@ -235,7 +243,7 @@ record serialization."
     Schema$Type/RECORD  (avro-record? schema datum)
     Schema$Type/ENUM    (avro-enum? schema datum)
     Schema$Type/FIXED   (avro-fixed? schema datum)
-    Schema$Type/BYTES   (avro-bytes? schema datum)
+    Schema$Type/BYTES   (avro-bytes? datum)
     Schema$Type/LONG    (integer? datum)
     Schema$Type/INT     (integer? datum)
     Schema$Type/DOUBLE  (float? datum)
@@ -254,7 +262,7 @@ record serialization."
           (if (schema-match? schema datum)
             i
             (recur schemas (inc i))))))))
-
+;; TODO allow keyword strings using a :clojureType prop.
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]
   (resolve-union* schema datum))

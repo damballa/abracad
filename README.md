@@ -188,7 +188,6 @@ Out of the box it supports:
 * `decimal` as `java.math.BigDecimal`. This implementation requires the scale of the `BigDecimal` to be set
 correctly prior to serialisation, there is an implementation `(abracad.avro.conversion/decimal-conversion-rounded rounding-mode)`
 that will set the scale and round using the given mode when serialising.
-* New "keyword" logical type: `{"type": "string", "logicalType": "keyword"}` as a `Keyword`.
 
 You can add your own conversions or override the defaults defaults by passing a map of
 `logical-type -> conversion` e.g. 
