@@ -3,9 +3,9 @@
   (:import (java.time LocalDate LocalTime Instant)
            (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion Conversion LogicalTypes LogicalType Schema LogicalTypes$Decimal)
            (java.time.temporal ChronoField ChronoUnit)
-           (clojure.lang Keyword APersistentMap)
+           (clojure.lang APersistentMap)
            (java.lang.reflect Field)
-           (java.math RoundingMode)
+           (java.math RoundingMode MathContext)
            (java.nio ByteBuffer)
            (org.apache.avro.generic GenericFixed)))
 
@@ -27,7 +27,6 @@
        (proxy-call-with-super (fn [] (. ~thissym ~meth ~@args)) ~thissym ~(name meth)))))
 
 ;; TODO re-implement with multimethods? :decimal :bytes
-;; TODO change the decimal implementation to round by default using the *math-context* dynamic for rounding.
 ;; from/to not implemented yet for arrays, maps or records. Only add these if requested. Possible array use case: rational/complex numbers?
 (defn clojure-conversion [logical-type conversion]
   (let [{conversion-class :class
@@ -167,6 +166,9 @@
              :to   (fn [^BigDecimal decimal schema ^LogicalTypes$Decimal logicalType]
                      (let [scaled (.setScale decimal (.getScale logicalType) mode)]
                        (.toFixed decimal-conversion scaled schema logicalType)))}}))
+
+(defn default-decimal-rounding-conversion []
+  (decimal-conversion-rounded (.getRoundingMode *math-context*)))
 
 (def default-conversions
   {:date              date-conversion

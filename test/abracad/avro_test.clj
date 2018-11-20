@@ -396,7 +396,7 @@
                   :firstName   "Ronnie",
                   :lastName    "Corbet",
                   :dateOfBirth (LocalDate/of 1930 12 4)
-                  :height      (bigdec 1.55)
+                  :height      (bigdec 1.55)                ;; TODO use M
                   :candles     4}
                  {:message-timestamp (Instant/ofEpochMilli 1234567890)
                   :firstName         "Ronnie",

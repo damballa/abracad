@@ -61,7 +61,6 @@ public class ClojureDatumReader extends GenericDatumReader<Object> {
 
     @Override
     protected Object readString(Object old, Schema expected, Decoder in) throws IOException {
-        // TODO tried this in clojure as `read-string` but it cannot resolve the .readString function on the Decoder. Does this need to move or is it OK here?
         String stringValue = in.readString();
         if ("keyword".equals(expected.getProp(ClojureData.CLOJURE_TYPE_PROP))) {
             return Keyword.intern(stringValue);
@@ -81,7 +80,7 @@ public class ClojureDatumReader extends GenericDatumReader<Object> {
     }
 
     @Override
-    protected Object readBytes(Object old, Schema expected, Decoder in) throws IOException {
+    protected Object readBytes(Object old, Schema expected, Decoder in) {
         Object bytes = Vars.readBytes.invoke(this, expected, in);
         if (expected.getLogicalType() != null) {
             // Logical type conversions expect byte buffers

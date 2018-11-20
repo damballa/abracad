@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import clojure.lang.Keyword;
 import org.apache.avro.Schema;
-import org.apache.avro.UnresolvedUnionException;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.Encoder;
 
@@ -77,10 +76,9 @@ public class ClojureDatumWriter extends GenericDatumWriter<Object> {
 
     @Override
     protected int resolveUnion(Schema union, Object datum) {
-        // Logical type cases will be resolved by the underlying clojure implementation
-        // TODO maybe move logical type checking into clojure? Java implementation seems to work fine though.
         Object i = Vars.resolveUnion.invoke(this, union, datum);
         if (i == null) {
+            // Logical type cases will not be resolved by the underlying clojure implementation
             return super.resolveUnion(union, datum);
         }
         return RT.intCast(i);
