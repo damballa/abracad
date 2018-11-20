@@ -1,6 +1,7 @@
 package abracad.avro;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import clojure.lang.Keyword;
 import org.apache.avro.Schema;
@@ -60,6 +61,7 @@ public class ClojureDatumReader extends GenericDatumReader<Object> {
 
     @Override
     protected Object readString(Object old, Schema expected, Decoder in) throws IOException {
+        // TODO tried this in clojure as `read-string` but it cannot resolve the .readString function on the Decoder. Does this need to move or is it OK here?
         String stringValue = in.readString();
         if ("keyword".equals(expected.getProp(ClojureData.CLOJURE_TYPE_PROP))) {
             return Keyword.intern(stringValue);
@@ -69,19 +71,23 @@ public class ClojureDatumReader extends GenericDatumReader<Object> {
     }
 
     @Override
-    protected Object readFixed(Object old, Schema expected, Decoder in) throws IOException {
+    protected Object readFixed(Object old, Schema expected, Decoder in) {
+        Object bytes = Vars.readFixed.invoke(this, expected, in);
         if (expected.getLogicalType() != null) {
-            return super.readFixed(old, expected, in);
+            // Logical type conversion expects generic fixed
+            return getData().createFixed(old, (byte[]) bytes, expected);
         }
-        return Vars.readFixed.invoke(this, expected, in);
+        return bytes;
     }
 
     @Override
     protected Object readBytes(Object old, Schema expected, Decoder in) throws IOException {
+        Object bytes = Vars.readBytes.invoke(this, expected, in);
         if (expected.getLogicalType() != null) {
-            return super.readBytes(old, expected, in);
+            // Logical type conversions expect byte buffers
+            return ByteBuffer.wrap((byte[]) bytes);
         }
-        return Vars.readBytes.invoke(this, expected, in);
+        return bytes;
     }
 
 }

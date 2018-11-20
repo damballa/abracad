@@ -203,6 +203,8 @@ You can add your own conversions or override the defaults defaults by passing a 
                                          :date    my-date-converter}))
 ```
 
+You can also automatically (de)serialise strings as keywords using `{:type :string :clojureType :keyword}`.
+
 ### Hadoop MapReduce integration
 
 Avro 1.7.5 and later supports configurable “data models” for datum

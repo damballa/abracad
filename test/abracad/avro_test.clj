@@ -135,7 +135,10 @@
     (is (roundtrips? schema [max-date]))
     (is (roundtrips? schema [min-date]))
     (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
-    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))
+    (testing "An array of dates roundtrips with logical types"
+      (let [array-schema (avro/parse-schema {:type :array :items {:type 'int :logicalType :date}})]
+        (is (roundtrips? array-schema [[epoch today max-date]]))))))
 
 (deftest test-time
   (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})

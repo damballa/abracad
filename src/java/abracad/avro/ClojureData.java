@@ -1,6 +1,5 @@
 package abracad.avro;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.apache.avro.Conversion;
@@ -47,7 +46,7 @@ public class ClojureData extends ReflectData {
 
     @Override
     public DatumReader createDatumReader(Schema schema) {
-        return new ClojureDatumReader(schema, schema, this);
+        return createDatumReader(schema, schema);
     }
 
     @Override

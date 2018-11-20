@@ -78,6 +78,7 @@ public class ClojureDatumWriter extends GenericDatumWriter<Object> {
     @Override
     protected int resolveUnion(Schema union, Object datum) {
         // Logical type cases will be resolved by the underlying clojure implementation
+        // TODO maybe move logical type checking into clojure? Java implementation seems to work fine though.
         Object i = Vars.resolveUnion.invoke(this, union, datum);
         if (i == null) {
             return super.resolveUnion(union, datum);
