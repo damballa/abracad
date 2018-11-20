@@ -189,17 +189,6 @@
 (deftest decimal-rounding-must-have-valid-mode
   (is (thrown? AssertionError (c/decimal-conversion-rounded :foo))))
 
-(deftest test-keyword
-  (let [schema (avro/parse-schema {:type 'string :logicalType :keyword})]
-    (is (roundtrips? schema [:anything]))
-    (is (roundtrips? schema [:foo]))))
-
-(deftest test-keyword-must-be-string
-  (is (nil? (.getLogicalType (avro/parse-schema {:type 'int :logicalType :keyword}))))
-  (is (nil? (.getLogicalType (avro/parse-schema {:type 'boolean :logicalType :keyword}))))
-  (is (nil? (.getLogicalType (avro/parse-schema {:type 'long :logicalType :keyword}))))
-  (is (nil? (.getLogicalType (avro/parse-schema {:type 'float :logicalType :keyword})))))
-
 (deftest test-uuid
   (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
         uuid        (UUID/randomUUID)
@@ -394,7 +383,7 @@
                               {:name :dateOfBirth :type {:type 'int :logicalType :date}}
                               {:name :height :type {:type :bytes :logicalType :decimal :scale 2 :precision 12}}
                               {:name :candles :type [{:type 'int}
-                                                     {:type 'string :logicalType :keyword}]}]})
+                                                     {:type 'string}]}]})
         records [{:message-timestamp (Instant/now)
                   :firstName   "Ronnie",
                   :lastName    "Corbet",
@@ -402,10 +391,10 @@
                   :height      (bigdec 1.55)
                   :candles     4}
                  {:message-timestamp (Instant/ofEpochMilli 1234567890)
-                  :firstName   "Ronnie",
-                  :lastName    "Barker",
-                  :dateOfBirth (LocalDate/of 1929 9 25)
-                  :height      (bigdec 1.72)
-                  :candles     :fork}]
+                  :firstName         "Ronnie",
+                  :lastName          "Barker",
+                  :dateOfBirth       (LocalDate/of 1929 9 25)
+                  :height            (bigdec 1.72)
+                  :candles           "fork"}]
         with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :unnecessary)})]
     (is (roundtrips-with-conversions? schema with-rounding records))))
