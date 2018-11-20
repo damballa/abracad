@@ -169,25 +169,25 @@
 (deftest test-decimal
   (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
         fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
-    (is (roundtrips? schema [(.setScale (bigdec 5) 6)]))
-    (is (roundtrips? fixed-schema [(.setScale (bigdec 5) 6)]))
-    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.12345)])))               ;; Scale too small
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 5.12345)])))               ;; Scale too small
-    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 5.123456789)])))           ;; Scale too big
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 5.123456789)])))           ;; Scale too big
-    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 123456789012.123456)])))   ;; More than precision
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 123456789012.123456)]))))) ;; More than precision
+    (is (roundtrips? schema [(.setScale 5M 6)]))
+    (is (roundtrips? fixed-schema [(.setScale 5M 6)]))
+    (is (thrown? AvroTypeException (roundtrips? schema [5.12345M])))                       ;; Scale too small
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [5.12345M])))                 ;; Scale too small
+    (is (thrown? AvroTypeException (roundtrips? schema [5.123456789M])))                   ;; Scale too big
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [5.123456789M])))             ;; Scale too big
+    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 1234567890123.123456)])))   ;; More than precision
+    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 1234567890123.123456)]))))) ;; More than precision
 
 (deftest test-decimal-with-rounding
   (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 8})
         fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 8})
         with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :half-up)})]
-    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5)]))
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5)]))
-    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5.12345)]))
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5.12345)]))
-    (is (roundtrips-with-conversions? schema with-rounding [(bigdec 5.123457) (bigdec 5.123456)] [(bigdec 5.1234565) (bigdec 5.12345649)]))       ;; Rounded [half up, down]
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [(bigdec 5.123457) (bigdec 5.123456)] [(bigdec 5.1234565) (bigdec 5.12345649)])))) ;; Rounded [half up, down]
+    (is (roundtrips-with-conversions? schema with-rounding [5M]))
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [5M]))
+    (is (roundtrips-with-conversions? schema with-rounding [5.12345M]))
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [5.12345M]))
+    (is (roundtrips-with-conversions? schema with-rounding [5.123457M 5.123456M] [5.1234565M 5.12345649M]))       ;; Rounded [half up, down]
+    (is (roundtrips-with-conversions? fixed-schema with-rounding [5.123457M 5.123456M] [5.1234565M 5.12345649M])))) ;; Rounded [half up, down]
 
 (deftest decimal-rounding-must-have-valid-mode
   (is (thrown? AssertionError (c/decimal-conversion-rounded :foo))))
@@ -396,13 +396,13 @@
                   :firstName   "Ronnie",
                   :lastName    "Corbet",
                   :dateOfBirth (LocalDate/of 1930 12 4)
-                  :height      (bigdec 1.55)                ;; TODO use M
+                  :height      1.55M
                   :candles     4}
                  {:message-timestamp (Instant/ofEpochMilli 1234567890)
                   :firstName         "Ronnie",
                   :lastName          "Barker",
                   :dateOfBirth       (LocalDate/of 1929 9 25)
-                  :height            (bigdec 1.72)
-                  :candles           :fork}]
+                  :height            1.72M
+                  :candles :fork}]
         with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :unnecessary)})]
     (is (roundtrips-with-conversions? schema with-rounding records))))
