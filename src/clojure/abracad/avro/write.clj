@@ -11,7 +11,8 @@
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
            [org.apache.avro.generic GenericRecord GenericFixed]
-           [abracad.avro ClojureDatumWriter ArrayAccessor]))
+           [abracad.avro ClojureDatumWriter ArrayAccessor ClojureData]
+           (org.apache.avro.util Utf8)))
 
 (def ^:const edn-element
   "abracad.avro.edn.Element")
@@ -228,14 +229,22 @@ record serialization."
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
 (defn avro-bytes?
-  [^Schema datum]
+  [datum]
   (or (instance? bytes-class datum)
       (instance? ByteBuffer datum)))
+
+(defn avro-string? [datum]
+  (or (string? datum)
+      (instance? Utf8 datum)
+      (instance? CharSequence datum)))
 
 (defn avro-fixed?
   [^Schema schema datum]
   (and (or (avro-bytes? datum))
        (= (.getFixedSize schema) (count-bytes datum))))
+
+(defn- keyword-type? [^Schema schema]
+  (= "keyword" (.getProp schema ClojureData/CLOJURE_TYPE_PROP)))
 
 (defn schema-match?
   [^Schema schema datum]
@@ -248,6 +257,8 @@ record serialization."
     Schema$Type/INT     (integer? datum)
     Schema$Type/DOUBLE  (float? datum)
     Schema$Type/FLOAT   (float? datum)
+    Schema$Type/STRING  (if (keyword-type? schema) (keyword? datum)
+                                                   (avro-string? datum))
     #_ else             false))
 
 (defn resolve-union*

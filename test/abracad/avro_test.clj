@@ -372,6 +372,11 @@
   (is (thrown? AssertionError (avro/datum-writer 'string {:foo c/uuid-conversion})))
   (is (thrown? AssertionError (avro/datum-reader 'string {:foo c/uuid-conversion}))))
 
+(deftest test-keyword-string
+  (let [schema (avro/parse-schema {:type 'string :clojureType :keyword})]
+    (is (roundtrips? schema [:foo]))
+    (is (roundtrips? schema [:bar]))))
+
 (deftest test-with-logical-types
   (let [schema (avro/parse-schema
                  {:type      :record
@@ -383,7 +388,7 @@
                               {:name :dateOfBirth :type {:type 'int :logicalType :date}}
                               {:name :height :type {:type :bytes :logicalType :decimal :scale 2 :precision 12}}
                               {:name :candles :type [{:type 'int}
-                                                     {:type 'string}]}]})
+                                                     {:type 'string :clojureType :keyword}]}]})
         records [{:message-timestamp (Instant/now)
                   :firstName   "Ronnie",
                   :lastName    "Corbet",
@@ -395,6 +400,6 @@
                   :lastName          "Barker",
                   :dateOfBirth       (LocalDate/of 1929 9 25)
                   :height            (bigdec 1.72)
-                  :candles           "fork"}]
+                  :candles           :fork}]
         with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :unnecessary)})]
     (is (roundtrips-with-conversions? schema with-rounding records))))

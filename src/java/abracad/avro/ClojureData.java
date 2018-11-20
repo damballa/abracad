@@ -16,61 +16,57 @@ import clojure.lang.Var;
 
 public class ClojureData extends ReflectData {
 
-private static class Vars {
-    private static final String NS = "abracad.avro.compare";
-    private static final Var compare = RT.var(NS, "compare");
-    static {
-        RT.var("clojure.core", "require").invoke(Symbol.intern(NS));
+    public static String CLOJURE_TYPE_PROP = "clojureType";
+
+    private static class Vars {
+        private static final String NS = "abracad.avro.compare";
+        private static final Var compare = RT.var(NS, "compare");
+
+        static {
+            RT.var("clojure.core", "require").invoke(Symbol.intern(NS));
+        }
     }
-}
 
-private static final ClojureData INSTANCE = new ClojureData();
+    // TODO add logical types to NS at high level and use on the default instance
+    private static final ClojureData INSTANCE = new ClojureData();
 
-public
-ClojureData() {
-    super();
-}
-
-public
-ClojureData(List<Conversion<?>> conversions) {
-    this();
-    for(Conversion<?> conversion: conversions) {
-        addLogicalTypeConversion(conversion);
+    public ClojureData() {
+        super();
     }
-}
 
-public static ClojureData
-get() {
-    return INSTANCE;
-}
+    public ClojureData(List<Conversion<?>> conversions) {
+        this();
+        for (Conversion<?> conversion : conversions) {
+            addLogicalTypeConversion(conversion);
+        }
+    }
 
-@Override
-public DatumReader
-createDatumReader(Schema schema) {
-  return new ClojureDatumReader(schema, schema, this);
-}
+    public static ClojureData get() {
+        return INSTANCE;
+    }
 
-@Override
-public DatumReader
-createDatumReader(Schema writer, Schema reader) {
-  return new ClojureDatumReader(writer, reader, this);
-}
+    @Override
+    public DatumReader createDatumReader(Schema schema) {
+        return new ClojureDatumReader(schema, schema, this);
+    }
 
-@Override
-public DatumWriter
-createDatumWriter(Schema schema) {
-  return new ClojureDatumWriter(schema, this);
-}
+    @Override
+    public DatumReader createDatumReader(Schema writer, Schema reader) {
+        return new ClojureDatumReader(writer, reader, this);
+    }
 
-@Override
-public int
-compare(Object o1, Object o2, Schema s, boolean equals) {
-    return (int) ((IFn.OOOOL) Vars.compare.get()).invokePrim(o1, o2, s, equals);
-}
+    @Override
+    public DatumWriter createDatumWriter(Schema schema) {
+        return new ClojureDatumWriter(schema, this);
+    }
 
-public int
-_supercompare(Object o1, Object o2, Schema s, boolean equals) {
-    return super.compare(o1, o2, s, equals);
-}
+    @Override
+    public int compare(Object o1, Object o2, Schema s, boolean equals) {
+        return (int) ((IFn.OOOOL) Vars.compare.get()).invokePrim(o1, o2, s, equals);
+    }
+
+    public int _supercompare(Object o1, Object o2, Schema s, boolean equals) {
+        return super.compare(o1, o2, s, equals);
+    }
 
 }

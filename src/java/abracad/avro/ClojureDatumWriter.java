@@ -2,6 +2,7 @@ package abracad.avro;
 
 import java.io.IOException;
 
+import clojure.lang.Keyword;
 import org.apache.avro.Schema;
 import org.apache.avro.UnresolvedUnionException;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -32,10 +33,8 @@ public class ClojureDatumWriter extends GenericDatumWriter<Object> {
         super(schema, data);
     }
 
-    // TODO remove all this and delegate to super class where possible
     @Override
-    public void
-    write(Schema schema, Object datum, Encoder out) throws IOException {
+    public void write(Schema schema, Object datum, Encoder out) throws IOException {
         Object datumCast = castDatum(schema, datum);
         super.write(schema, datumCast, out);
     }
@@ -62,27 +61,23 @@ public class ClojureDatumWriter extends GenericDatumWriter<Object> {
     }
 
     @Override
-    protected void
-    writeRecord(Schema schema, Object datum, Encoder out) {
+    protected void writeRecord(Schema schema, Object datum, Encoder out) {
         Vars.writeRecord.invoke(this, schema, datum, out);
     }
 
     @Override
-    protected void
-    writeEnum(Schema schema, Object datum, Encoder out) {
+    protected void writeEnum(Schema schema, Object datum, Encoder out) {
         Vars.writeEnum.invoke(this, schema, datum, out);
     }
 
     @Override
-    protected void
-    writeArray(Schema schema, Object datum, Encoder out) {
+    protected void writeArray(Schema schema, Object datum, Encoder out) {
         Vars.writeArray.invoke(this, schema, datum, out);
     }
 
     @Override
-    protected int
-    resolveUnion(Schema union, Object datum) {
-        // TODO move logical type resolve into clojure resolve?
+    protected int resolveUnion(Schema union, Object datum) {
+        // Logical type cases will be resolved by the underlying clojure implementation
         Object i = Vars.resolveUnion.invoke(this, union, datum);
         if (i == null) {
             return super.resolveUnion(union, datum);
@@ -91,15 +86,21 @@ public class ClojureDatumWriter extends GenericDatumWriter<Object> {
     }
 
     @Override
-    protected void
-    writeBytes(Object datum, Encoder out) {
+    protected void writeBytes(Object datum, Encoder out) {
         Vars.writeBytes.invoke(this, datum, out);
     }
 
     @Override
-    protected void
-    writeFixed(Schema schema, Object datum, Encoder out) {
+    protected void writeFixed(Schema schema, Object datum, Encoder out) {
         Vars.writeFixed.invoke(this, schema, datum, out);
     }
 
+    @Override
+    protected void writeString(Schema schema, Object datum, Encoder out) throws IOException {
+        if ("keyword".equals(schema.getProp(ClojureData.CLOJURE_TYPE_PROP))) {
+            super.writeString(schema, ((Keyword) datum).getName(), out);
+        } else {
+            super.writeString(schema, datum, out);
+        }
+    }
 }
