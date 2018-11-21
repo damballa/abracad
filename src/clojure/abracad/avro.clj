@@ -128,46 +128,32 @@ provided `types`, and optionally named `name`."
 but the first `n` fields when sorting."
   [n schema] (-> schema unparse-schema (update-in [:fields] order-ignore n)))
 
-(defn ^:private clojure-data [conversions]
-  (ClojureData. (map c/coerce (seq conversions))))
-
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
   ([] (datum-reader nil))
-  ([schema] (datum-reader schema c/default-conversions))
-  ([schema conversions] (datum-reader schema schema conversions))
-  ([expected actual conversions]
+  ([schema] (datum-reader schema schema))
+  ([expected actual]
      (ClojureDatumReader.
       (if-not (nil? expected) (parse-schema expected))
       (if-not (nil? actual) (parse-schema actual))
-      (clojure-data conversions))))
-
-(defn ^:private datum-reader-arg [arg]
-  (if (or
-        (instance? Schema arg)
-        (not (contains? arg :schema)))
-    (datum-reader arg)
-    (let [{:keys [schema conversions]} arg]
-      (datum-reader schema conversions))))
+      (c/create-clojure-data))))
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
-  ([expected source](data-file-reader expected c/default-conversions source))
-  ([expected conversions source]
+  ([expected source]
    (DataFileReader/openReader
-     (seekable-input source) (datum-reader expected conversions))))
+     (seekable-input source) (datum-reader expected))))
 
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
   ([source] (data-file-stream nil source))
-  ([expected source] (data-file-stream expected c/default-conversions source))
-  ([expected conversions source]
+  ([expected source]
    (DataFileStream.
-     (io/input-stream source) (datum-reader expected conversions))))
+     (io/input-stream source) (datum-reader expected))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
@@ -200,23 +186,19 @@ an input stream, a byte array, or a vector of `[bytes off len]`."
       (decoder-factory jsonDecoder schema ^String source))))
 
 (defn decode
-  "Decode and return one object from `source` using `arg`.  The
+  "Decode and return one object from `source` using `schema`.  The
 `source` may be an existing Decoder object or anything on which
-a (binary-encoding) Decoder may be opened.
-
-The `arg` may either be a schema to be parsed or a map with
-shape {:schema schema :conversions conversion-map} where
-conversion-map is a map of logical type conversions."
-  [arg source]
-  (let [reader (coerce DatumReader datum-reader-arg arg)
+a (binary-encoding) Decoder may be opened."
+  [schema source]
+  (let [reader (coerce DatumReader datum-reader schema)
         decoder (coerce Decoder binary-decoder source)]
     (.read reader nil decoder)))
 
 (defn decode-seq
   "As per `decode`, but decode and return a sequence of all objects
 decoded serially from `source`."
-  [arg source]
-  (let [reader (coerce DatumReader datum-reader-arg arg)
+  [schema source]
+  (let [reader (coerce DatumReader datum-reader schema)
         decoder (coerce Decoder binary-decoder source)]
     ((fn step []
        (lazy-seq
@@ -229,19 +211,10 @@ decoded serially from `source`."
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}
   ([] (datum-writer nil))
-  ([schema] (datum-writer schema c/default-conversions))
-  ([schema conversions]
+  ([schema]
    (ClojureDatumWriter.
      (if-not (nil? schema) (parse-schema schema))
-     (clojure-data conversions))))
-
-(defn ^:private datum-writer-arg [arg]
-  (if (or
-        (instance? Schema arg)
-        (not (contains? arg :schema)))
-    (datum-writer arg)
-    (let [{:keys [schema conversions]} arg]
-      (datum-writer schema conversions))))
+     (c/create-clojure-data))))
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
@@ -283,36 +256,31 @@ decoded serially from `source`."
 
 
 (defn encode
-  "Serially encode each record in `records` to `sink` using `arg`.
+  "Serially encode each record in `records` to `sink` using `schema`.
 The `sink` may be an existing Encoder object, or anything on which
-a (binary-encoding) Encoder may be opened.
-
-The `arg` may either be a schema to be parsed or a map with
-shape {:schema schema :conversions conversion-map} where
-conversion-map is a map of logical type conversions."
-  [arg sink & records]
-  (let [writer (coerce DatumWriter datum-writer-arg arg)
+a (binary-encoding) Encoder may be opened."
+  [schema sink & records]
+  (let [writer (coerce DatumWriter datum-writer schema)
         encoder (coerce Encoder binary-encoder sink)]
     (doseq [record records]
       (.write writer record encoder))
     (.flush encoder)))
 
 (defn binary-encoded
-  "Return bytes produced by binary-encoding `records` with `arg`
+  "Return bytes produced by binary-encoding `records` with `schema`
 via `encode`."
-  [arg & records]
+  [schema & records]
   (with-open [out (ByteArrayOutputStream.)]
-    (apply encode arg out records)
+    (apply encode schema out records)
     (.toByteArray out)))
 
 (defn json-encoded
-  "Return string produced by JSON-encoding `records` with `arg`
+  "Return string produced by JSON-encoding `records` with `schema`
 via `encode`."
-  [arg & records]
+  [schema & records]
   (with-open [out (ByteArrayOutputStream.)]
-    (let [schema (if (:schema arg) (:schema arg) arg)]
-      (apply encode arg (json-encoder schema out) records)
-      (String. (.toByteArray out)))))
+    (apply encode schema (json-encoder schema out) records)
+    (String. (.toByteArray out))))
 
 (defn compare
   "Compare `x` and `y` according to `schema`."

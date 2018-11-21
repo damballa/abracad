@@ -28,18 +28,6 @@
      (and (= expected (apply roundtrip-binary schema input))
           (= expected (apply roundtrip-json schema input)))))
 
-(defn roundtrip-json-with-conversions
-  [schema conversions & records]
-  (->> (apply avro/json-encoded {:schema schema :conversions conversions} records)
-       (avro/json-decoder schema)
-       (avro/decode-seq {:schema schema :conversions conversions})))
-
-(defn roundtrips-with-conversions?
-  ([schema conversions input] (roundtrips-with-conversions? schema conversions input input))
-  ([schema conversions expected input]
-   (and (= expected (apply roundtrip-binary {:schema schema :conversions conversions} input))
-        (= expected (apply roundtrip-json-with-conversions schema conversions input)))))
-
 (defrecord Example [foo-foo bar])
 
 (defrecord SubExample [^long baz])
@@ -50,7 +38,7 @@
   (field-get [this field]
     (case field
       :address (.getAddress this)))
-  (field-list [this] #{:address}))
+  (field-list [_] #{:address}))
 
 (defn ->InetAddress
   [address] (InetAddress/getByAddress address))
@@ -140,6 +128,15 @@
       (let [array-schema (avro/parse-schema {:type :array :items {:type 'int :logicalType :date}})]
         (is (roundtrips? array-schema [[epoch today max-date]]))))))
 
+(deftest test-date-with-logical-types-off
+  (binding [abracad.avro.conversion/*use-logical-types* false]
+    (let [schema (avro/parse-schema {:type 'int :logicalType :date})
+          today (LocalDate/now)]
+      (testing "Underlying primitive still roundtrips"
+        (is (roundtrips? schema [10])))
+      (testing "Logical type fails"
+        (is (thrown? ClassCastException (roundtrips? schema [today])))))))
+
 (deftest test-time
   (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})
         midnight                  LocalTime/MIDNIGHT
@@ -188,9 +185,6 @@
                       (is (roundtrips? fixed-schema [5.12345M]))
                       (is (roundtrips? schema [5.123457M 5.123456M] [5.1234565M 5.12345649M])) ;; Rounded [half up, down]
                       (is (roundtrips? fixed-schema [5.123457M 5.123456M] [5.1234565M 5.12345649M]))))) ;; Rounded [half up, down]
-
-(deftest decimal-rounding-must-have-valid-mode
-  (is (thrown? AssertionError (c/decimal-conversion-rounded :foo))))
 
 (deftest test-uuid
   (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
@@ -371,10 +365,6 @@
     (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
       (is (= records (seq dfs))))))
 
-(deftest test-must-use-java-conversion-for-correct-logical-type
-  (is (thrown? AssertionError (avro/datum-writer 'string {:foo c/uuid-conversion})))
-  (is (thrown? AssertionError (avro/datum-reader 'string {:foo c/uuid-conversion}))))
-
 (deftest test-keyword-string
   (let [schema (avro/parse-schema {:type 'string :clojureType :keyword})]
     (is (roundtrips? schema [:foo]))
@@ -403,6 +393,5 @@
                   :lastName          "Barker",
                   :dateOfBirth       (LocalDate/of 1929 9 25)
                   :height            1.72M
-                  :candles :fork}]
-        with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :unnecessary)})]
-    (is (roundtrips-with-conversions? schema with-rounding records))))
+                  :candles :fork}]]
+    (is (roundtrips? schema records))))

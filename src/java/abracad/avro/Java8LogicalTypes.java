@@ -34,7 +34,7 @@ public class Java8LogicalTypes {
 
         @Override
         public Integer toInt(LocalDate date, Schema schema, LogicalType type) {
-            return (int) date.toEpochDay();
+            return Math.toIntExact(date.toEpochDay());
         }
 
         @Override
@@ -61,7 +61,7 @@ public class Java8LogicalTypes {
 
         @Override
         public Integer toInt(LocalTime time, Schema schema, LogicalType type) {
-            return (int) TimeUnit.NANOSECONDS.toMillis(time.toNanoOfDay());
+            return Math.toIntExact(TimeUnit.NANOSECONDS.toMillis(time.toNanoOfDay()));
         }
 
         @Override
