@@ -27,7 +27,6 @@ public class ClojureData extends ReflectData {
         }
     }
 
-    // TODO add logical types to NS at high level and use on the default instance
     private static final ClojureData NO_CONVERSIONS = new ClojureData(Collections.emptyList());
 
     public ClojureData(List<Conversion<?>> conversions) {

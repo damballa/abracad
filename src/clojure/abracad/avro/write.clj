@@ -273,7 +273,7 @@ record serialization."
           (if (schema-match? schema datum)
             i
             (recur schemas (inc i))))))))
-;; TODO allow keyword strings using a :clojureType prop.
+
 (defn resolve-union
   [^ClojureDatumWriter writer ^Schema schema ^Object datum]
   (resolve-union* schema datum))
