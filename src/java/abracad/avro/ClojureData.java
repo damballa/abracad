@@ -1,5 +1,6 @@
 package abracad.avro;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.avro.Conversion;
@@ -27,21 +28,17 @@ public class ClojureData extends ReflectData {
     }
 
     // TODO add logical types to NS at high level and use on the default instance
-    private static final ClojureData INSTANCE = new ClojureData();
-
-    public ClojureData() {
-        super();
-    }
+    private static final ClojureData NO_CONVERSIONS = new ClojureData(Collections.emptyList());
 
     public ClojureData(List<Conversion<?>> conversions) {
-        this();
+        super();
         for (Conversion<?> conversion : conversions) {
             addLogicalTypeConversion(conversion);
         }
     }
 
-    public static ClojureData get() {
-        return INSTANCE;
+    public static ClojureData withNoConversions() {
+        return NO_CONVERSIONS;
     }
 
     @Override

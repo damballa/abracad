@@ -179,15 +179,15 @@
     (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 1234567890123.123456)]))))) ;; More than precision
 
 (deftest test-decimal-with-rounding
-  (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 8})
-        fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 8})
-        with-rounding (merge c/default-conversions {:decimal (c/decimal-conversion-rounded :half-up)})]
-    (is (roundtrips-with-conversions? schema with-rounding [5M]))
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [5M]))
-    (is (roundtrips-with-conversions? schema with-rounding [5.12345M]))
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [5.12345M]))
-    (is (roundtrips-with-conversions? schema with-rounding [5.123457M 5.123456M] [5.1234565M 5.12345649M]))       ;; Rounded [half up, down]
-    (is (roundtrips-with-conversions? fixed-schema with-rounding [5.123457M 5.123456M] [5.1234565M 5.12345649M])))) ;; Rounded [half up, down]
+  (with-precision 8 :rounding HALF_UP
+                    (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 8})
+                          fixed-schema (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 8})]
+                      (is (roundtrips? schema [5M]))
+                      (is (roundtrips? fixed-schema [5M]))
+                      (is (roundtrips? schema [5.12345M]))
+                      (is (roundtrips? fixed-schema [5.12345M]))
+                      (is (roundtrips? schema [5.123457M 5.123456M] [5.1234565M 5.12345649M])) ;; Rounded [half up, down]
+                      (is (roundtrips? fixed-schema [5.123457M 5.123456M] [5.1234565M 5.12345649M]))))) ;; Rounded [half up, down]
 
 (deftest decimal-rounding-must-have-valid-mode
   (is (thrown? AssertionError (c/decimal-conversion-rounded :foo))))

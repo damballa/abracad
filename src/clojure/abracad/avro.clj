@@ -318,7 +318,7 @@ via `encode`."
   "Compare `x` and `y` according to `schema`."
   [schema x y]
   (let [schema (parse-schema schema)]
-    (.compare (ClojureData/get) x y schema)))
+    (.compare (ClojureData/withNoConversions) x y schema)))
 
 (defn spit
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."

@@ -34,9 +34,7 @@ public class Java8LogicalTypes {
 
         @Override
         public Integer toInt(LocalDate date, Schema schema, LogicalType type) {
-            long epochDays = date.toEpochDay();
-
-            return (int) epochDays;
+            return (int) date.toEpochDay();
         }
 
         @Override
