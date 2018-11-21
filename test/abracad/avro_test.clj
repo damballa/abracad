@@ -6,7 +6,7 @@
   (:import [java.io FileInputStream]
            [java.net InetAddress]
            [java.time LocalDate LocalTime Instant]
-           [org.apache.avro SchemaParseException AvroTypeException]
+           [org.apache.avro SchemaParseException]
            [clojure.lang ExceptionInfo]
            (java.util UUID)
            (java.time.temporal ChronoUnit)))
@@ -168,12 +168,12 @@
         fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
     (is (roundtrips? schema [(.setScale 5M 6)]))
     (is (roundtrips? fixed-schema [(.setScale 5M 6)]))
-    (is (thrown? AvroTypeException (roundtrips? schema [5.12345M])))                       ;; Scale too small
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [5.12345M])))                 ;; Scale too small
-    (is (thrown? AvroTypeException (roundtrips? schema [5.123456789M])))                   ;; Scale too big
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [5.123456789M])))             ;; Scale too big
-    (is (thrown? AvroTypeException (roundtrips? schema [(bigdec 1234567890123.123456)])))   ;; More than precision
-    (is (thrown? AvroTypeException (roundtrips? fixed-schema [(bigdec 1234567890123.123456)]))))) ;; More than precision
+    (is (roundtrips? schema [5.12345M]))                       ;; Scale too small
+    (is (roundtrips? fixed-schema [5.12345M]))
+    (is (thrown? ArithmeticException (roundtrips? schema [5.123456789M])))                   ;; Scale too big
+    (is (thrown? ArithmeticException (roundtrips? fixed-schema [5.123456789M])))
+    (is (roundtrips? schema [(bigdec 1234567890123.123456)]))
+    (is (roundtrips? fixed-schema [(bigdec 1234567890123.123456)]))))
 
 (deftest test-decimal-with-rounding
   (with-precision 8 :rounding HALF_UP

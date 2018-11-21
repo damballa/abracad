@@ -1,7 +1,7 @@
 (ns abracad.avro.conversion
   "Logical Type converter implementations"
-  (:import (org.apache.avro Conversions$UUIDConversion Conversions$DecimalConversion)
-           (java.math MathContext)
+  (:import (org.apache.avro Conversions$UUIDConversion)
+           (java.math MathContext RoundingMode)
            (abracad.avro ClojureData Java8LogicalTypes$RoundingDecimalConversion Java8LogicalTypes$DateConversion Java8LogicalTypes$TimeMillisConversion Java8LogicalTypes$TimeMicrosConversion Java8LogicalTypes$TimestampMillisConversion Java8LogicalTypes$TimestampMicrosConversion)))
 
 (def ^:dynamic *use-logical-types*
@@ -18,11 +18,9 @@
 
 (defn- default-conversions []
   (let [^MathContext context *math-context*
-        decimal-conversion   (if context
-                               (Java8LogicalTypes$RoundingDecimalConversion. (.getRoundingMode context))
-                               (Conversions$DecimalConversion.))]
+        roundingMode   (if context (.getRoundingMode context) RoundingMode/UNNECESSARY)]
     [uuid-conversion date-conversion time-conversion time-micros-conversion
-     timestamp-conversion timestamp-micros-conversion decimal-conversion]))
+     timestamp-conversion timestamp-micros-conversion (Java8LogicalTypes$RoundingDecimalConversion. roundingMode)]))
 
 (defn create-clojure-data []
   (if *use-logical-types*

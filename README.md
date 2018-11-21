@@ -185,25 +185,23 @@ Out of the box it supports:
 * `time-millis` as `java.time.LocalTime`
 * `date` as `java.time.LocalDate`
 * `uuid` as `java.util.UUID`
-* `decimal` as `java.math.BigDecimal`. This implementation requires the scale of the `BigDecimal` to be set
-correctly prior to serialisation, there is an implementation `(abracad.avro.conversion/decimal-conversion-rounded rounding-mode)`
-that will set the scale and round using the given mode when serialising.
-
-You can add your own conversions or override the defaults defaults by passing a map of
-`logical-type -> conversion` e.g. 
-
-```clojure
-;; Custom data type that can be turned into an epoch day
-(def my-date-converter {:class MyDate
-                        :int   {:from (fn [day _ _] (MyDate. day))
-                                :to   (fn [day _ _] (.asEpochDay day))}})
-
-(avro/datum-writer schema 
-  (merge conversion/default-conversions {:decimal (conversion/decimal-conversion-rounded :half-up)
-                                         :date    my-date-converter}))
-```
+* `decimal` as `java.math.BigDecimal`. The `*math-context*` dynamic var will be used to set the rounding mode
+of bigdecimals and they will be scaled to the correct scale for your schema. If no math context is set then 
+`RoundingMode/UNNECESSARY` will be used. 
 
 You can also automatically (de)serialise strings as keywords using `{:type :string :clojureType :keyword}`.
+
+if you prefer you can turn off logical types by setting the dynamic var `abracad.avro.conversion/*use-logical-types*` to `false`.
+
+```clojure
+
+(def logical-type-reader
+  (abracad.avro/datum-reader schema))
+
+(def standard-reader
+  (binding [abracad.avro.conversion/*use-logical-types* false]
+    (abracad.avro/datum-reader schema)))
+```
 
 ### Hadoop MapReduce integration
 
