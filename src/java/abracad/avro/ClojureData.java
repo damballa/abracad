@@ -36,7 +36,7 @@ public class ClojureData extends ReflectData {
         }
     }
 
-    public static ClojureData withNoConversions() {
+    public static ClojureData withoutConversions() {
         return NO_CONVERSIONS;
     }
 

@@ -25,4 +25,4 @@
 (defn create-clojure-data []
   (if *use-logical-types*
     (ClojureData. (default-conversions))
-    (ClojureData/withNoConversions)))
+    (ClojureData/withoutConversions)))

@@ -240,7 +240,7 @@ record serialization."
 
 (defn avro-fixed?
   [^Schema schema datum]
-  (and (or (avro-bytes? datum))
+  (and (avro-bytes? datum)
        (= (.getFixedSize schema) (count-bytes datum))))
 
 (defn- keyword-type? [^Schema schema]

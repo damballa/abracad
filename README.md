@@ -178,7 +178,7 @@ schemas.
 
 ### Logical Types
 
-Abracad supports [avro logical types](https://avro.apache.org/docs/1.8.0/spec.html#Logical+Types). 
+Abracad supports [avro logical types](https://avro.apache.org/docs/1.8.2/spec.html#Logical+Types). 
 Out of the box it supports:
 
 * `timestamp-millis` as `java.time.Instant`

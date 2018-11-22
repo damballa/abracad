@@ -47,7 +47,7 @@
 
 (defn supercompare
   ^long [x y ^Schema schema equals]
-  (._supercompare (ClojureData/withNoConversions) x y schema equals))
+  (._supercompare (ClojureData/withoutConversions) x y schema equals))
 
 (defn compare
   ^long [x y ^Schema schema equals]

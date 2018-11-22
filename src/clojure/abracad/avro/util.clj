@@ -41,7 +41,9 @@ evaluated at macro-expansion time."
                                      (.replace \- \_)
                                      ;; Un-mangle logical type names
                                      (.replace "timestamp_millis" "timestamp-millis")
-                                     (.replace "time_millis" "time-millis"))))
+                                     (.replace "timestamp_micros" "timestamp-micros")
+                                     (.replace "time_millis" "time-millis")
+                                     (.replace "time_micros" "time-micros"))))
 
 (defn unmangle
   "Reverse Clojure->Avro name-mangling when `*mangle-names* is true."

@@ -135,8 +135,8 @@ but the first `n` fields when sorting."
   ([schema] (datum-reader schema schema))
   ([expected actual]
      (ClojureDatumReader.
-      (if-not (nil? expected) (parse-schema expected))
-      (if-not (nil? actual) (parse-schema actual))
+      (when-not (nil? expected) (parse-schema expected))
+      (when-not (nil? actual) (parse-schema actual))
       (c/create-clojure-data))))
 
 (defn data-file-reader
@@ -213,7 +213,7 @@ decoded serially from `source`."
   ([] (datum-writer nil))
   ([schema]
    (ClojureDatumWriter.
-     (if-not (nil? schema) (parse-schema schema))
+     (when-not (nil? schema) (parse-schema schema))
      (c/create-clojure-data))))
 
 (defn data-file-writer
@@ -286,7 +286,7 @@ via `encode`."
   "Compare `x` and `y` according to `schema`."
   [schema x y]
   (let [schema (parse-schema schema)]
-    (.compare (ClojureData/withNoConversions) x y schema)))
+    (.compare (ClojureData/withoutConversions) x y schema)))
 
 (defn spit
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."
