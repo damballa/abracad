@@ -1,12 +1,11 @@
 (ns abracad.avro.model-test
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro])
-  (:import [org.apache.avro Schema]
-           [abracad.avro ClojureData]))
+  (:import [org.apache.avro Schema]))
 
 (defn ac-compare
   [x y ^Schema schema]
-  (.compare (ClojureData/get) x y schema))
+  (avro/compare schema x y ))
 
 (deftest test-compare-bytes
   (let [schema (avro/parse-schema :bytes)

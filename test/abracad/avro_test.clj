@@ -1,11 +1,15 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer :all]
             [abracad.avro :as avro]
-            [clojure.java.io :as io])
-  (:import [java.io ByteArrayOutputStream FileInputStream]
+            [clojure.java.io :as io]
+            [abracad.avro.conversion :as c])
+  (:import [java.io FileInputStream]
            [java.net InetAddress]
+           [java.time LocalDate LocalTime Instant]
            [org.apache.avro SchemaParseException]
-           [clojure.lang ExceptionInfo]))
+           [clojure.lang ExceptionInfo]
+           (java.util UUID)
+           (java.time.temporal ChronoUnit)))
 
 (defn roundtrip-binary
   [schema & records]
@@ -34,7 +38,7 @@
   (field-get [this field]
     (case field
       :address (.getAddress this)))
-  (field-list [this] #{:address}))
+  (field-list [_] #{:address}))
 
 (defn ->InetAddress
   [address] (InetAddress/getByAddress address))
@@ -103,6 +107,91 @@
     (is (roundtrips? schema [true] [true]))
     (is (roundtrips? schema [false] [false]))
     (is (roundtrips? schema [false] [nil]))))
+
+(deftest test-date
+  (let [schema         (avro/parse-schema {:type 'int :logicalType :date})
+        epoch          (LocalDate/of 1970 1 1)
+        today          (LocalDate/now)
+        before-epoch   (LocalDate/of 1969 12 31)
+        max-date       (LocalDate/of 5881580 7 11)          ;; Date corresponding to MAX_VALUE days since epoch
+        after-max      (LocalDate/of 5881580 7 12)
+        min-date       (LocalDate/of -5877641 6 23)         ;; Date corresponding to MIN_VALUE days before epoch
+        before-min     (LocalDate/of -5877641 6 22)]
+    (is (roundtrips? schema [epoch]))
+    (is (roundtrips? schema [today]))
+    (is (roundtrips? schema [before-epoch]))
+    (is (roundtrips? schema [max-date]))
+    (is (roundtrips? schema [min-date]))
+    (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))
+    (testing "An array of dates roundtrips with logical types"
+      (let [array-schema (avro/parse-schema {:type :array :items {:type 'int :logicalType :date}})]
+        (is (roundtrips? array-schema [[epoch today max-date]]))))))
+
+(deftest test-date-with-logical-types-off
+  (binding [abracad.avro.conversion/*use-logical-types* false]
+    (let [schema (avro/parse-schema {:type 'int :logicalType :date})
+          today (LocalDate/now)]
+      (testing "Underlying primitive still roundtrips"
+        (is (roundtrips? schema [10])))
+      (testing "Logical type fails"
+        (is (thrown? ClassCastException (roundtrips? schema [today])))))))
+
+(deftest test-time
+  (let [schema                    (avro/parse-schema {:type 'int :logicalType :time-millis})
+        midnight                  LocalTime/MIDNIGHT
+        now                       (LocalTime/now)
+        one-milli-before-midnight (.minus midnight 1 ChronoUnit/MILLIS)]
+    (is (roundtrips? schema [midnight]))
+    (is (roundtrips? schema [now]))
+    (is (roundtrips? schema [one-milli-before-midnight]))))
+
+(deftest test-timestamp-millis
+  (let [schema        (avro/parse-schema {:type 'long :logicalType :timestamp-millis})
+        epoch         Instant/EPOCH
+        now           (Instant/now)
+        before-epoch  (Instant/ofEpochMilli -1)
+        max-time      (Instant/ofEpochMilli Long/MAX_VALUE)
+        after-max     (.plusMillis max-time 1)
+        min-time      (Instant/ofEpochMilli Long/MIN_VALUE)
+        before-min    (.minusMillis min-time 1)]
+    (is (roundtrips? schema [epoch]))
+    (is (roundtrips? schema [now]))
+    (is (roundtrips? schema [before-epoch]))
+    (is (roundtrips? schema [max-time]))
+    (is (roundtrips? schema [min-time]))
+    (is (thrown? ArithmeticException (roundtrips? schema [after-max])))
+    (is (thrown? ArithmeticException (roundtrips? schema [before-min])))))
+
+(deftest test-decimal
+  (let [schema        (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 12})
+        fixed-schema  (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 12})]
+    (is (roundtrips? schema [(.setScale 5M 6)]))
+    (is (roundtrips? fixed-schema [(.setScale 5M 6)]))
+    (is (roundtrips? schema [5.12345M]))                       ;; Scale too small
+    (is (roundtrips? fixed-schema [5.12345M]))
+    (is (thrown? ArithmeticException (roundtrips? schema [5.123456789M])))                   ;; Scale too big
+    (is (thrown? ArithmeticException (roundtrips? fixed-schema [5.123456789M])))
+    (is (roundtrips? schema [(bigdec 1234567890123.123456)]))
+    (is (roundtrips? fixed-schema [(bigdec 1234567890123.123456)]))))
+
+(deftest test-decimal-with-rounding
+  (with-precision 8 :rounding HALF_UP
+                    (let [schema (avro/parse-schema {:type :bytes :logicalType :decimal :scale 6 :precision 8})
+                          fixed-schema (avro/parse-schema {:type :fixed :name :foo :size 10 :logicalType :decimal :scale 6 :precision 8})]
+                      (is (roundtrips? schema [5M]))
+                      (is (roundtrips? fixed-schema [5M]))
+                      (is (roundtrips? schema [5.12345M]))
+                      (is (roundtrips? fixed-schema [5.12345M]))
+                      (is (roundtrips? schema [5.123457M 5.123456M] [5.1234565M 5.12345649M])) ;; Rounded [half up, down]
+                      (is (roundtrips? fixed-schema [5.123457M 5.123456M] [5.1234565M 5.12345649M]))))) ;; Rounded [half up, down]
+
+(deftest test-uuid
+  (let [schema      (avro/parse-schema {:type 'string :logicalType :uuid})
+        uuid        (UUID/randomUUID)
+        stringUUID  "a7b168ce-d4ff-49a2-a7a5-e65ac06dbe67"]
+    (is (roundtrips? schema [uuid]))
+    (is (roundtrips? schema [(UUID/fromString stringUUID)] [stringUUID]))))
 
 (deftest test-union
   (let [vertical {:type :enum, :name "vertical", :symbols [:up :down]}
@@ -275,3 +364,34 @@
     (avro/mspit schema path records)
     (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
       (is (= records (seq dfs))))))
+
+(deftest test-keyword-string
+  (let [schema (avro/parse-schema {:type 'string :clojureType :keyword})]
+    (is (roundtrips? schema [:foo]))
+    (is (roundtrips? schema [:bar]))))
+
+(deftest test-with-logical-types
+  (let [schema (avro/parse-schema
+                 {:type      :record
+                  :name      :Person
+                  :namespace "com.test"
+                  :fields    [{:name :message-timestamp :type {:type 'long :logicalType :timestamp-millis}}
+                              {:name :firstName :type 'string}
+                              {:name :lastName :type 'string}
+                              {:name :dateOfBirth :type {:type 'int :logicalType :date}}
+                              {:name :height :type {:type :bytes :logicalType :decimal :scale 2 :precision 12}}
+                              {:name :candles :type [{:type 'int}
+                                                     {:type 'string :clojureType :keyword}]}]})
+        records [{:message-timestamp (Instant/now)
+                  :firstName   "Ronnie",
+                  :lastName    "Corbet",
+                  :dateOfBirth (LocalDate/of 1930 12 4)
+                  :height      1.55M
+                  :candles     4}
+                 {:message-timestamp (Instant/ofEpochMilli 1234567890)
+                  :firstName         "Ronnie",
+                  :lastName          "Barker",
+                  :dateOfBirth       (LocalDate/of 1929 9 25)
+                  :height            1.72M
+                  :candles :fork}]]
+    (is (roundtrips? schema records))))

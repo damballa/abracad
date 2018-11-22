@@ -5,13 +5,14 @@
             [abracad.avro.edn :as edn]
             [abracad.avro.util :refer [case-expr case-enum mangle unmangle
                                        field-keyword]])
-  (:import [java.util Collection Map List]
+  (:import [java.util Collection Map]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
            [org.apache.avro.io Encoder]
-           [org.apache.avro.generic GenericRecord]
-           [abracad.avro ClojureDatumWriter ArrayAccessor]))
+           [org.apache.avro.generic GenericRecord GenericFixed]
+           [abracad.avro ClojureDatumWriter ArrayAccessor ClojureData]
+           (org.apache.avro.util Utf8)))
 
 (def ^:const edn-element
   "abracad.avro.edn.Element")
@@ -70,6 +71,14 @@ record serialization."
     (.writeBytes encoder bytes))
   (emit-fixed [^ByteBuffer bytes ^Encoder encoder]
     (.writeFixed encoder bytes)))
+
+(extend-type GenericFixed
+  HandleBytes
+  (count-bytes [^GenericFixed fixed] (alength (.bytes fixed)))
+  (emit-bytes [^GenericFixed fixed ^Encoder encoder]
+    (.writeBytes encoder (.bytes fixed)))
+  (emit-fixed [^GenericFixed fixed ^Encoder encoder]
+    (.writeFixed encoder (.bytes fixed))))
 
 (defn schema-error!
   [^Schema schema datum]
@@ -220,14 +229,22 @@ record serialization."
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
 (defn avro-bytes?
-  [^Schema schema datum]
+  [datum]
   (or (instance? bytes-class datum)
       (instance? ByteBuffer datum)))
 
+(defn avro-string? [datum]
+  (or (string? datum)
+      (instance? Utf8 datum)
+      (instance? CharSequence datum)))
+
 (defn avro-fixed?
   [^Schema schema datum]
-  (and (avro-bytes? schema datum)
+  (and (avro-bytes? datum)
        (= (.getFixedSize schema) (count-bytes datum))))
+
+(defn- keyword-type? [^Schema schema]
+  (= "keyword" (.getProp schema ClojureData/CLOJURE_TYPE_PROP)))
 
 (defn schema-match?
   [^Schema schema datum]
@@ -235,11 +252,13 @@ record serialization."
     Schema$Type/RECORD  (avro-record? schema datum)
     Schema$Type/ENUM    (avro-enum? schema datum)
     Schema$Type/FIXED   (avro-fixed? schema datum)
-    Schema$Type/BYTES   (avro-bytes? schema datum)
+    Schema$Type/BYTES   (avro-bytes? datum)
     Schema$Type/LONG    (integer? datum)
     Schema$Type/INT     (integer? datum)
     Schema$Type/DOUBLE  (float? datum)
     Schema$Type/FLOAT   (float? datum)
+    Schema$Type/STRING  (if (keyword-type? schema) (keyword? datum)
+                                                   (avro-string? datum))
     #_ else             false))
 
 (defn resolve-union*

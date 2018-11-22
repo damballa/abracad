@@ -4,12 +4,13 @@
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle coerce]])
+            [abracad.avro.util :refer [returning mangle unmangle coerce]]
+            [abracad.avro.conversion :as c])
   (:import [java.io
-             ByteArrayInputStream ByteArrayOutputStream EOFException
-             File FileInputStream InputStream OutputStream]
+             ByteArrayOutputStream EOFException
+             File InputStream OutputStream]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser Schema$Type]
+           [org.apache.avro Schema Schema$Parser]
            [org.apache.avro.file
              CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
              SeekableFileInput SeekableByteArrayInput]
@@ -130,30 +131,29 @@ but the first `n` fields when sorting."
 (defn datum-reader
   "Return an Avro DatumReader which produces Clojure data structures."
   {:tag `ClojureDatumReader}
-  ([] (ClojureDatumReader.))
-  ([schema]
-     (ClojureDatumReader.
-      (if-not (nil? schema) (parse-schema schema))))
+  ([] (datum-reader nil))
+  ([schema] (datum-reader schema schema))
   ([expected actual]
      (ClojureDatumReader.
-      (if-not (nil? expected) (parse-schema expected))
-      (if-not (nil? actual) (parse-schema actual)))))
+      (when-not (nil? expected) (parse-schema expected))
+      (when-not (nil? actual) (parse-schema actual))
+      (c/create-clojure-data))))
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
   {:tag `DataFileReader}
   ([source] (data-file-reader nil source))
   ([expected source]
-     (DataFileReader/openReader
-      (seekable-input source) (datum-reader expected))))
+   (DataFileReader/openReader
+     (seekable-input source) (datum-reader expected))))
 
 (defn data-file-stream
   "Return an Avro DataFileStream which produces Clojure data structures."
   {:tag `DataFileStream}
   ([source] (data-file-stream nil source))
   ([expected source]
-     (DataFileStream.
-       (io/input-stream source) (datum-reader expected))))
+   (DataFileStream.
+     (io/input-stream source) (datum-reader expected))))
 
 (defmacro ^:private decoder-factory
   "Invoke static methods of default Avro Decoder factory."
@@ -210,10 +210,11 @@ decoded serially from `source`."
 (defn datum-writer
   "Return an Avro DatumWriter which consumes Clojure data structures."
   {:tag `ClojureDatumWriter}
-  ([] (ClojureDatumWriter.))
+  ([] (datum-writer nil))
   ([schema]
-     (ClojureDatumWriter.
-      (if-not (nil? schema) (parse-schema schema)))))
+   (ClojureDatumWriter.
+     (when-not (nil? schema) (parse-schema schema))
+     (c/create-clojure-data))))
 
 (defn data-file-writer
   "Return an Avro DataFileWriter which consumes Clojure data structures."
@@ -253,6 +254,7 @@ decoded serially from `source`."
   (let [schema (parse-schema schema)]
     (encoder-factory jsonEncoder schema ^OutputStream sink)))
 
+
 (defn encode
   "Serially encode each record in `records` to `sink` using `schema`.
 The `sink` may be an existing Encoder object, or anything on which
@@ -284,7 +286,7 @@ via `encode`."
   "Compare `x` and `y` according to `schema`."
   [schema x y]
   (let [schema (parse-schema schema)]
-    (.compare (ClojureData/get) x y schema)))
+    (.compare (ClojureData/withoutConversions) x y schema)))
 
 (defn spit
   "Like core `spit`, but emits `content` to `f` as Avro with `schema`."

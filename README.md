@@ -176,6 +176,33 @@ schemas.
 ;;=> {:foo [bar "baz" 1337]}
 ```
 
+### Logical Types
+
+Abracad supports [avro logical types](https://avro.apache.org/docs/1.8.2/spec.html#Logical+Types). 
+Out of the box it supports:
+
+* `timestamp-millis` as `java.time.Instant`
+* `time-millis` as `java.time.LocalTime`
+* `date` as `java.time.LocalDate`
+* `uuid` as `java.util.UUID`
+* `decimal` as `java.math.BigDecimal`. The `*math-context*` dynamic var will be used to set the rounding mode
+of bigdecimals and they will be scaled to the correct scale for your schema. If no math context is set then 
+`RoundingMode/UNNECESSARY` will be used. 
+
+You can also automatically (de)serialise strings as keywords using `{:type :string :clojureType :keyword}`.
+
+if you prefer you can turn off logical types by setting the dynamic var `abracad.avro.conversion/*use-logical-types*` to `false`.
+
+```clojure
+
+(def logical-type-reader
+  (abracad.avro/datum-reader schema))
+
+(def standard-reader
+  (binding [abracad.avro.conversion/*use-logical-types* false]
+    (abracad.avro/datum-reader schema)))
+```
+
 ### Hadoop MapReduce integration
 
 Avro 1.7.5 and later supports configurable “data models” for datum

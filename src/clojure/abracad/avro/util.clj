@@ -37,7 +37,13 @@ evaluated at macro-expansion time."
 
 (defn mangle
   "Perform Clojure->Avro name-mangling when `*mangle-names*` is true."
-  [^String n] (if *mangle-names* (.replace n \- \_) n))
+  [^String n] (if *mangle-names* (-> n
+                                     (.replace \- \_)
+                                     ;; Un-mangle logical type names
+                                     (.replace "timestamp_millis" "timestamp-millis")
+                                     (.replace "timestamp_micros" "timestamp-micros")
+                                     (.replace "time_millis" "time-millis")
+                                     (.replace "time_micros" "time-micros"))))
 
 (defn unmangle
   "Reverse Clojure->Avro name-mangling when `*mangle-names* is true."
