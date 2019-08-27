@@ -6,6 +6,7 @@
              {:name "Apache License, Version 2.0"
               :url "http://www.apache.org/licenses/LICENSE-2.0.html"}]
   :global-vars {*warn-on-reflection* true}
+  :deploy-repositories {"clojars" {:sign-releases false}}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-target" "1.7" "-source" "1.7"]
