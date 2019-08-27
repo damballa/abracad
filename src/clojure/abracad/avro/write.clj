@@ -138,7 +138,7 @@ record serialization."
 
 (defn array-prim?
   [datum]
-  (let [cls (class datum)]
+  (when-let [cls (class datum)]
     (and (-> cls .isArray)
          (-> cls .getComponentType .isPrimitive))))
 
