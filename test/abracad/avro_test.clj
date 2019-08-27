@@ -288,12 +288,10 @@
         input {:name "test"
                :attributes [{:name "test 2"
                              :attributes [{:name "test 3"}]}]}
-
         output {:name "test"
                 :attributes [{:name "test 2"
                               :attributes [{:name "test 3"
                                             :attributes []}]}]}]
-
     (is (= output
            (->> input
                 (avro/binary-encoded schema)
