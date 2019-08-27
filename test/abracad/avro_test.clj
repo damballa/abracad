@@ -275,3 +275,26 @@
     (avro/mspit schema path records)
     (with-open [dfs (avro/data-file-stream (FileInputStream. path))]
       (is (= records (seq dfs))))))
+
+(deftest recursive-schemas-and-npe
+  (let [schema-def {:name "TestRecord"
+                    :type "record"
+                    :fields [{:name "name"
+                              :type ["null" "string"]}
+                             {:name "attributes"
+                              :type {:type "array"
+                                     :items ["null" "TestRecord"]}}]}
+        schema (avro/parse-schema schema-def)
+        input {:name "test"
+               :attributes [{:name "test 2"
+                             :attributes [{:name "test 3"}]}]}
+
+        output {:name "test"
+                :attributes [{:name "test 2"
+                              :attributes [{:name "test 3"
+                                            :attributes []}]}]}]
+
+    (is (= output
+           (->> input
+                (avro/binary-encoded schema)
+                (avro/decode schema))))))
