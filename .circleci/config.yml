@@ -24,4 +24,4 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "project.clj" }}
 
-      - run: ./script/ci-test
+      - run: ./.circleci/run
