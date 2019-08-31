@@ -1,6 +1,5 @@
 # abracad
 
-[![Build Status](https://secure.travis-ci.org/damballa/abracad.png)](http://travis-ci.org/damballa/abracad)
 
 Abracad is a Clojure library for de/serializing Clojure data
 structures with Avro, leveraging the Java Avro implementation.
@@ -10,22 +9,26 @@ arbitrary schemas; customized protocol-based mappings between Avro
 records and any JVM types; and “schema-less” EDN-in-Avro serialization
 of arbitrary Clojure data.
 
+# About this fork
+
+Since the original repo seems to be abandoned, this fork addresses the following issues:
+
+- [x] NPE when deserializing nullable record attributes of type array
+- [x] deserializing map keys as keywords
+- [ ] logical types (aka support for timestamps, dates etc)
+
 ## Installation
 
 Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[nomnom/abracad "0.4.14"]
+[nomnom/abracad "0.4.15"]
 ```
 
 ## Usage
 
-Example usage follows; [detailed API documentation][api] available,
-generated via [codox][codox].
-
-[api]: http://damballa.github.io/abracad/
-[codox]: https://github.com/weavejester/codox
+[See the documentation on CLJDoc](https://cljdoc.org/d/nomnom/abracad/0.4.15/doc/readme)
 
 ### Schemas
 
@@ -199,6 +202,7 @@ These are the early days.  Still to be done:
 ## License
 
 Copyright © 2013-2015 Damballa Inc. and contributors.
+Copyright © 2019-  NomNom Inc. and contributors.
 
 Distributed under your choice of the Eclipse Public License or the
 Apache License, Version 2.0.
