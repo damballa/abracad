@@ -21,8 +21,8 @@
 (defn roundtrips?
   ([schema input] (roundtrips? schema input input))
   ([schema expected input]
-     (and (= expected (apply roundtrip-binary schema input))
-          (= expected (apply roundtrip-json schema input)))))
+   (and (= expected (apply roundtrip-binary schema input))
+        (= expected (apply roundtrip-json schema input)))))
 
 (defrecord Example [foo-foo bar])
 
@@ -166,7 +166,7 @@
                 {:name "Example", :type "record",
                  :fields [{:name "foo", :type "long"}]})]
     (is (thrown? clojure.lang.ExceptionInfo
-          (roundtrips? schema [{:foo 0}] [{:foo 0, :bar 1}])))
+                 (roundtrips? schema [{:foo 0}] [{:foo 0, :bar 1}])))
     (is (roundtrips? schema [{:foo 0}] [^{:type 'Example} {:foo 0, :bar 1}]))
     (is (roundtrips? schema [{:foo 0}] [^:avro/unchecked {:foo 0, :bar 1}]))))
 
@@ -203,23 +203,23 @@
         records [0 [1] [2] 3 4 [5]]]
     (is (roundtrips? schema records))
     (is (= "mangle_me"
-          (-> schema1 avro/unparse-schema :name)))
+           (-> schema1 avro/unparse-schema :name)))
     (is (thrown? SchemaParseException
-          (binding [abracad.avro.util/*mangle-names* false]
-            (avro/parse-schema schema-def))))))
+                 (binding [abracad.avro.util/*mangle-names* false]
+                   (avro/parse-schema schema-def))))))
 
 (deftest test-mangling
   (let [schema (avro/parse-schema
-                 {:name "mangling", :type "record",
-                  :fields [{:name "a-dash", :type "long"}]})
+                {:name "mangling", :type "record",
+                 :fields [{:name "a-dash", :type "long"}]})
         dash-data [{:a-dash 1}]
         under-data [{:a_dash 1}]]
     (is (roundtrips? schema dash-data))
     (is (thrown-with-msg? ExceptionInfo #"Cannot write datum as schema"
-          (binding [abracad.avro.util/*mangle-names* false]
-            (roundtrips? schema dash-data))))
+                          (binding [abracad.avro.util/*mangle-names* false]
+                            (roundtrips? schema dash-data))))
     (is (thrown-with-msg? ExceptionInfo #"Cannot write datum as schema"
-          (roundtrips? schema under-data)))
+                          (roundtrips? schema under-data)))
     (is (binding [abracad.avro.util/*mangle-names* false]
           (roundtrips? schema under-data)))))
 
@@ -292,6 +292,29 @@
                 :attributes [{:name "test 2"
                               :attributes [{:name "test 3"
                                             :attributes []}]}]}]
+    (is (= output
+           (->> input
+                (avro/binary-encoded schema)
+                (avro/decode schema))))))
+
+(deftest symbol-keys-in-maps
+  (let [schema-def {:name "TestRecord"
+                    :type "record"
+                    :fields [{:name "name"
+                              :type ["null" "string"]}
+                             {:name "attributes"
+                              :type {:type  "map"
+
+                                     :values ["string" "long"]}}]}
+        schema (avro/parse-schema schema-def)
+        input {:name "test"
+               :attributes {:key-1 "a"
+                            :key-2 2
+                            "key-3" "foo"}}
+        output {:name "test"
+                :attributes {:key-1 "a"
+                             :key-2 2
+                             "key-3" "foo"}}]
     (is (= output
            (->> input
                 (avro/binary-encoded schema)

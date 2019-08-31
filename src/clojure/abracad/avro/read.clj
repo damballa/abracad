@@ -86,13 +86,20 @@ schema name symbol `rname`."
 
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
-  (let [vtype (.getValueType expected), n (.readMapStart in)]
+  (let [vtype (.getValueType expected)
+        n (.readMapStart in)]
     (if-not (pos? n)
       {}
       (persistent!
-       (loop [m (transient {}), n (long n)]
-         (let [k (.readString in), v (.read reader nil vtype in)
-               m (assoc! m k v), n (dec n)]
+       (loop [m (transient {})
+              n (long n)]
+         (let [ks (.readString in)
+               k (if (.startsWith ^String ks ":") ; naively decode map keys as keywords
+                   (keyword (.replaceFirst ^String ks ":" ""))
+                   ks)
+               v (.read reader nil vtype in)
+               m (assoc! m k v)
+               n (dec n)]
            (if-not (pos? n)
              (let [n (.mapNext in)] (if-not (pos? n) m (recur m n)))
              (recur m n))))))))
