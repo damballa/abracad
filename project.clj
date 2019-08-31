@@ -1,11 +1,12 @@
-(defproject com.damballa/abracad "0.4.14-SNAPSHOT"
-  :description "De/serialize Clojure data structures with Avro."
+(defproject nomnom/abracad "0.4.14"
+  :description "De/serialize Clojure data structures with Avro. Public fork, while waiting for upstream"
   :url "http://github.com/damballa/abracad"
   :licenses [{:name "Eclipse Public License"
               :url "http://www.eclipse.org/legal/epl-v10.html"}
              {:name "Apache License, Version 2.0"
               :url "http://www.apache.org/licenses/LICENSE-2.0.html"}]
   :global-vars {*warn-on-reflection* true}
+  :deploy-repositories {"clojars" {:sign-releases false}}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-target" "1.7" "-source" "1.7"]
