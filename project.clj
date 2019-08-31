@@ -14,4 +14,4 @@
                  [org.apache.avro/avro "1.9.0"]
                  [org.xerial.snappy/snappy-java "1.1.7.3"]
                  [cheshire/cheshire "5.9.0"]]
-  :codox {:include [abracad.avro abracad.avro.edn]})
+  :plugins [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]])

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+chmod +x ./cc-test-reporter
+./cc-test-reporter before-build
+
+
+LEIN_FAST_TRAMPOLINE=1 lein trampoline cloverage \
+                    --lcov \
+                    --no-text \
+                    --no-html \
+                    --no-summary \
+                    -o $PWD
+testRes=$?
+mkdir -p coverage
+mv lcov.info coverage/lcov.info
+./cc-test-reporter after-build --coverage-input-type lcov --exit-code $testRes
