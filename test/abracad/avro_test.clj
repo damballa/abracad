@@ -303,8 +303,8 @@
                     :fields [{:name "name"
                               :type ["null" "string"]}
                              {:name "attributes"
-                              :type {:type  "map"
-                                     :values ["string" "long"]}}]}
+                              :type ["null"  {:type  "map"
+                                              :values ["string" "long"]}]}]}
         schema (avro/parse-schema schema-def)
         input {:name "test"
                :attributes {:key-1 "a"
