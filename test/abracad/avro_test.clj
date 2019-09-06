@@ -304,7 +304,6 @@
                               :type ["null" "string"]}
                              {:name "attributes"
                               :type {:type  "map"
-
                                      :values ["string" "long"]}}]}
         schema (avro/parse-schema schema-def)
         input {:name "test"
@@ -318,4 +317,9 @@
     (is (= output
            (->> input
                 (avro/binary-encoded schema)
-                (avro/decode schema))))))
+                (avro/decode schema))))
+    (testing "empty maps"
+      (is (= {:name "test" :attributes {}}
+             (->> {:name "test" :attributes {}}
+                  (avro/binary-encoded schema)
+                  (avro/decode schema)))))))
