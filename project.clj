@@ -1,4 +1,4 @@
-(defproject nomnom/abracad "0.4.15"
+(defproject nomnom/abracad "0.4.16-SNAPSHOT"
   :description "De/serialize Clojure data structures with Avro"
   :url "http://github.com/nomnom/abracad"
   :licenses [{:name "Eclipse Public License"
