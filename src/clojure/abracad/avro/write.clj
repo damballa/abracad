@@ -240,6 +240,7 @@ record serialization."
     Schema$Type/INT     (integer? datum)
     Schema$Type/DOUBLE  (float? datum)
     Schema$Type/FLOAT   (float? datum)
+    Schema$Type/MAP     (map? datum)
     #_ else             false))
 
 (defn resolve-union*

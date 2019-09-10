@@ -15,6 +15,7 @@ Since the original repo seems to be abandoned, this fork addresses the following
 
 - [x] NPE when deserializing nullable record attributes of type array
 - [x] deserializing map keys as keywords
+- [x] serializing nullable maps
 - [ ] logical types (aka support for timestamps, dates etc)
 
 ## Installation
@@ -23,7 +24,7 @@ Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[nomnom/abracad "0.4.15"]
+[nomnom/abracad "0.4.16-SNAPSHOT"]
 ```
 
 ## Usage
