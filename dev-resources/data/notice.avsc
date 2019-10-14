@@ -1,0 +1,10 @@
+{
+  "name": "Notice",
+  "type": "record",
+  "fields": [
+    {
+      "name": "text",
+      "type": "string"
+    }
+  ]
+}

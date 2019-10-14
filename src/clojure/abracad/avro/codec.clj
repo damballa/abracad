@@ -1,0 +1,60 @@
+(ns abracad.avro.codec
+  "Basic functions for serializing/deserializing Avro
+  data and making it portable via Base64 encoding"
+  (:refer-clojure :exclude [load])
+  (:require [abracad.avro :as avro])
+  (:import (java.util Base64 Base64$Encoder Base64$Decoder)))
+
+(def base64-encoder (Base64/getEncoder))
+
+(def base64-decoder (Base64/getDecoder))
+
+(defn base64-encode [^bytes bytes]
+  (.encode ^Base64$Encoder base64-encoder ^bytes bytes))
+
+(defn base64-decode [payload]
+  (.decode ^Base64$Decoder base64-decoder ^String (if (string? payload)
+                                                    payload
+                                                    (String. payload))))
+(defn dump
+  "Encode avro message into a bag of bytes"
+  [schema message]
+  (avro/binary-encoded schema message))
+
+(defn load
+  "Deserialize Avro structure into a Clojure structure, must conform to `schema`"
+  [schema payload]
+  (avro/decode schema payload))
+
+(defn parse-schema*
+  "Reads schema definition and parses it"
+  [& schema-definition]
+  (apply avro/parse-schema schema-definition))
+
+;; Memoized version of parse schema.
+;; Schemas do not change at runtime so it's
+;; ok to cache parsing results
+(def parse-schema
+  (memoize parse-schema*))
+
+(defn ->avro
+  "Encodes given object with avro schema"
+  [schema-struct payload]
+  (dump (parse-schema schema-struct) payload))
+
+(defn avro->
+  "Decodes given object with avro schema"
+  [schema-struct payload]
+  (load (parse-schema schema-struct) payload))
+
+(defn ->avro-base64
+  "Encode the payload with given Avro schema
+  and encode it as base64 string"
+  [schema-struct payload]
+  (base64-encode (->avro schema-struct payload)))
+
+(defn avro-base64->
+  "Decode base64 encoded string and
+  load data with given Avro schema"
+  [schema-struct payload]
+  (avro-> schema-struct (base64-decode payload)))
