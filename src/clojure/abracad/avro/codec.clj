@@ -17,7 +17,7 @@
                                                     payload
                                                     (String. payload))))
 (defn dump
-  "Encode avro message into a bag of bytes"
+  "Encode Avro message into a bag of bytes"
   [schema message]
   (avro/binary-encoded schema message))
 
@@ -34,27 +34,26 @@
 ;; Memoized version of parse schema.
 ;; Schemas do not change at runtime so it's
 ;; ok to cache parsing results
-(def parse-schema
+(def ^{:doc "Memoized version of parse-schema*"} parse-schema
   (memoize parse-schema*))
 
 (defn ->avro
-  "Encodes given object with avro schema"
+  "Encodes given arg with Avro schema"
   [schema-struct payload]
   (dump (parse-schema schema-struct) payload))
 
 (defn avro->
-  "Decodes given object with avro schema"
+  "Decodes given bag bytes with Avro schema"
   [schema-struct payload]
   (load (parse-schema schema-struct) payload))
 
 (defn ->avro-base64
   "Encode the payload with given Avro schema
-  and encode it as base64 string"
+  and encode it as Base64"
   [schema-struct payload]
   (base64-encode (->avro schema-struct payload)))
 
 (defn avro-base64->
-  "Decode base64 encoded string and
-  load data with given Avro schema"
+  "Decode Base64 data and load data with given Avro schema"
   [schema-struct payload]
   (avro-> schema-struct (base64-decode payload)))
