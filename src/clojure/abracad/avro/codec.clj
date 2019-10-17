@@ -13,9 +13,11 @@
   (.encode ^Base64$Encoder base64-encoder ^bytes bytes))
 
 (defn base64-decode [payload]
-  (.decode ^Base64$Decoder base64-decoder ^String (if (string? payload)
-                                                    payload
-                                                    (String. payload))))
+  (let [payload-string (if (string? payload)
+                         payload
+                         (String. ^bytes payload))]
+    (.decode ^Base64$Decoder base64-decoder ^String payload-string)))
+
 (defn dump
   "Encode Avro message into a bag of bytes"
   [schema message]
