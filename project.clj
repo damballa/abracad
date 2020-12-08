@@ -16,7 +16,7 @@
 
   :global-vars {*warn-on-reflection* true}
 
-  :dependencies [[org.apache.avro/avro "1.9.1"]
+  :dependencies [[org.apache.avro/avro "1.10.1"]
                  [cheshire/cheshire "5.9.0"]]
 
   :codox {:include [abracad.avro abracad.avro.edn]}
