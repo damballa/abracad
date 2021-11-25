@@ -1,8 +1,8 @@
 (ns abracad.avro-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is testing]]
             [abracad.avro :as avro]
             [clojure.java.io :as io])
-  (:import [java.io ByteArrayOutputStream FileInputStream]
+  (:import [java.io FileInputStream]
            [java.net InetAddress]
            [org.apache.avro SchemaParseException]
            [clojure.lang ExceptionInfo]))
