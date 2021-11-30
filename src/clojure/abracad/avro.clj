@@ -4,12 +4,12 @@
   (:require [clojure.java.io :as io]
             [clojure.walk :refer [postwalk]]
             [cheshire.core :as json]
-            [abracad.avro.util :refer [returning mangle unmangle coerce]])
+            [abracad.avro.util :refer [mangle coerce]])
   (:import [java.io
-             ByteArrayInputStream ByteArrayOutputStream EOFException
-             File FileInputStream InputStream OutputStream]
+              ByteArrayOutputStream EOFException
+             File  InputStream OutputStream]
            [clojure.lang Named]
-           [org.apache.avro Schema Schema$Parser Schema$Type]
+           [org.apache.avro Schema Schema$Parser]
            [org.apache.avro.file
              CodecFactory DataFileWriter DataFileReader DataFileStream SeekableInput
              SeekableFileInput SeekableByteArrayInput]
@@ -133,11 +133,11 @@ but the first `n` fields when sorting."
   ([] (ClojureDatumReader.))
   ([schema]
      (ClojureDatumReader.
-      (if-not (nil? schema) (parse-schema schema))))
+      (when-not (nil? schema) (parse-schema schema))))
   ([expected actual]
      (ClojureDatumReader.
-      (if-not (nil? expected) (parse-schema expected))
-      (if-not (nil? actual) (parse-schema actual)))))
+      (when-not (nil? expected) (parse-schema expected))
+      (when-not (nil? actual) (parse-schema actual)))))
 
 (defn data-file-reader
   "Return an Avro DataFileReader which produces Clojure data structures."
@@ -295,7 +295,7 @@ via `encode`."
 
 (defn slurp
   "Like core `slurp`, but reads Avro content from `f`."
-  [f & opts]
+  [f]
   (with-open [dfr (data-file-reader f)]
     (.next dfr)))
 
@@ -309,7 +309,7 @@ via `encode`."
 
 (defn mslurp
   "Like Avro `slurp`, but produces a sequence of records."
-  [f & opts]
+  [f]
   (with-open [dfr (data-file-reader f)]
     (into [] dfr)))
 
