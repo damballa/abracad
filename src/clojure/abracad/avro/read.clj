@@ -1,18 +1,29 @@
 (ns abracad.avro.read
   "Generic data reading implementation."
   {:private true}
-  (:require [abracad.avro :as avro]
-            [abracad.avro.util
-             :refer [unmangle field-keyword if-not-let]])
-  (:import [clojure.lang Var]
-           [org.apache.avro Schema Schema$Field]
-           [org.apache.avro.io Decoder ResolvingDecoder]
-           [abracad.avro ClojureDatumReader ArrayAccessor]))
+  (:require
+    [abracad.avro :as avro]
+    [abracad.avro.util
+     :refer [unmangle field-keyword if-not-let]])
+  (:import
+    (abracad.avro
+      ArrayAccessor
+      ClojureDatumReader)
+    (clojure.lang
+      Var)
+    (org.apache.avro
+      Schema
+      Schema$Field)
+    (org.apache.avro.io
+      Decoder
+      ResolvingDecoder)))
+
 
 (defn schema-symbol
   [^Schema schema]
   (let [ns (.getNamespace schema), n (-> schema .getName unmangle)]
     (if ns (symbol (unmangle ns) n) (symbol n))))
+
 
 (defn record-plain
   "Record as plain decoded data structures, with :type metadata
@@ -20,9 +31,12 @@ indicating schema name."
   [rname record]
   (with-meta record {:type rname}))
 
+
 (defn record-reader
   "Generate wrapper for provided Avro reader function."
-  [f] (fn [_ record] (apply f record)))
+  [f]
+  (fn [_ record] (apply f record)))
+
 
 (defn reader-fn
   "Return tuple of `(named?, readerf)` for provided Avro `schema` and
@@ -31,11 +45,12 @@ schema name symbol `rname`."
   (if-let [f (get avro/*avro-readers* rname)]
     [false (record-reader f)]
     (if-not-let [reader (.getProp schema "abracad.reader")]
-      [true record-plain]
-      (case reader
-        "vector" [false record-plain]
-        #_else   (throw (ex-info "unknown `abracad.reader`"
-                                 {:reader reader}))))))
+                [true record-plain]
+                (case reader
+                  "vector" [false record-plain]
+                  #_else   (throw (ex-info "unknown `abracad.reader`"
+                                           {:reader reader}))))))
+
 
 (defn read-record
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
@@ -44,8 +59,8 @@ schema name symbol `rname`."
         [reducef record] (if named?
                            [(fn [m ^Schema$Field f]
                               (assoc! m
-                                (field-keyword f)
-                                (.read reader nil (.schema f) in)))
+                                      (field-keyword f)
+                                      (.read reader nil (.schema f) in)))
                             (transient {})]
                            [(fn [v ^Schema$Field f]
                               (conj! v (.read reader nil (.schema f) in)))
@@ -53,20 +68,23 @@ schema name symbol `rname`."
         record (->> in .readFieldOrder (reduce reducef record) persistent!)]
     (readerf rname record)))
 
+
 (defn read-enum
   [_ ^Schema expected ^Decoder in]
   (-> expected .getEnumSymbols (.get (.readEnum in)) unmangle keyword))
+
 
 (defn read-array-vector
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in ^long n]
   (if-not (pos? n)
     []
     (persistent!
-     (loop [m (transient []), n (long n)]
-       (let [m (conj! m (.read reader nil expected in)), n (dec n)]
-         (if-not (pos? n)
-           (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
-           (recur m n)))))))
+      (loop [m (transient []), n (long n)]
+        (let [m (conj! m (.read reader nil expected in)), n (dec n)]
+          (if-not (pos? n)
+            (let [n (.arrayNext in)] (if-not (pos? n) m (recur m n)))
+            (recur m n)))))))
+
 
 (defn read-array
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
@@ -84,6 +102,7 @@ schema name symbol `rname`."
         "floats" (ArrayAccessor/readArray (float-array n) n in)
         "doubles" (ArrayAccessor/readArray (double-array n) n in)))))
 
+
 (defn read-map
   [^ClojureDatumReader reader ^Schema expected ^ResolvingDecoder in]
   (let [vtype (.getValueType expected)
@@ -91,18 +110,19 @@ schema name symbol `rname`."
     (if-not (pos? n)
       {}
       (persistent!
-       (loop [m (transient {})
-              n (long n)]
-         (let [ks (.readString in)
-               k (if (.startsWith ^String ks ":") ; naively decode map keys as keywords
-                   (keyword (.replaceFirst ^String ks ":" ""))
-                   ks)
-               v (.read reader nil vtype in)
-               m (assoc! m k v)
-               n (dec n)]
-           (if-not (pos? n)
-             (let [n (.mapNext in)] (if-not (pos? n) m (recur m n)))
-             (recur m n))))))))
+        (loop [m (transient {})
+               n (long n)]
+          (let [ks (.readString in)
+                k (if (.startsWith ^String ks ":") ; naively decode map keys as keywords
+                    (keyword (.replaceFirst ^String ks ":" ""))
+                    ks)
+                v (.read reader nil vtype in)
+                m (assoc! m k v)
+                n (dec n)]
+            (if-not (pos? n)
+              (let [n (.mapNext in)] (if-not (pos? n) m (recur m n)))
+              (recur m n))))))))
+
 
 (defn read-fixed
   [_ ^Schema expected ^Decoder in]
@@ -110,9 +130,11 @@ schema name symbol `rname`."
     (.readFixed in bytes 0 size)
     bytes))
 
+
 (defn read-bytes
   [_ _ ^Decoder in]
   (.array (.readBytes in nil)))
+
 
 ;; Load namespaces in order to ensure Avro reader vars are available
 (doseq [ns (->> (vals avro/*avro-readers*)

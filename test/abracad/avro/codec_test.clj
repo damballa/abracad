@@ -1,7 +1,9 @@
 (ns abracad.avro.codec-test
-  (:require [clojure.test :refer [deftest is testing]]
-            [abracad.io :as io]
-            [abracad.avro.codec :as codec]))
+  (:require
+    [abracad.avro.codec :as codec]
+    [abracad.io :as io]
+    [clojure.test :refer [deftest is testing]]))
+
 
 (def schema-data
   {:type "record"
@@ -11,6 +13,7 @@
             {:type "string"
              :name "codename"}]})
 
+
 (deftest full-cycle
   (let [sample {:count 1
                 :codename "bananas"}
@@ -19,20 +22,21 @@
     (is (= sample
            (codec/avro-base64-> schema-data encoded)))))
 
+
 (deftest embedded-schemas
   (let [convo-schema-json (io/read-json-resource "data/conversation.avsc")
         author-schema-json (io/read-json-resource "data/author.avsc")
         message-schema-json (io/read-json-resource "data/message.avsc")
         notice-schema-json (io/read-json-resource "data/notice.avsc")
         full-schema (codec/parse-schema*
-                     author-schema-json
-                     message-schema-json
-                     notice-schema-json
-                     convo-schema-json)
+                      author-schema-json
+                      message-schema-json
+                      notice-schema-json
+                      convo-schema-json)
         author-schema (codec/parse-schema* author-schema-json)
         msg-schema (codec/parse-schema*
-                    author-schema-json
-                    message-schema-json)]
+                     author-schema-json
+                     message-schema-json)]
     (testing "individual sub-schemas"
       (is (= {:username "foo" :email "lol"}
              (codec/avro-> author-schema

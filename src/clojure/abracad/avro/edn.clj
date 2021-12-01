@@ -1,19 +1,42 @@
 (ns abracad.avro.edn
-  (:require [abracad.avro :as avro]
-            [abracad.avro.util :refer [coerce]])
-  (:import [clojure.lang BigInt Cons IMeta IPersistentList IPersistentMap
-             IPersistentSet IPersistentVector ISeq Keyword PersistentArrayMap
-             PersistentQueue Ratio Sorted Symbol]
-           [org.apache.avro Schema]))
+  (:require
+    [abracad.avro :as avro]
+    [abracad.avro.util :refer [coerce]])
+  (:import
+    (clojure.lang
+      BigInt
+      Cons
+      IMeta
+      IPersistentList
+      IPersistentMap
+      IPersistentSet
+      IPersistentVector
+      ISeq
+      Keyword
+      PersistentArrayMap
+      PersistentQueue
+      Ratio
+      Sorted
+      Symbol)
+    (org.apache.avro
+      Schema)))
+
 
 (defprotocol EDNAvroSerializable
   "Protocol for customizing EDN-in-Avro serialization."
-  (-schema-name [this]
+
+  (-schema-name
+    [this]
     "Full package-/namespace-qualified name for EDN-in-Avro purposes.")
-  (field-get [this field]
+
+  (field-get
+    [this field]
     "Value of keyword `field` for EDN-in-Avro serialization of object.")
-  (field-list [this]
+
+  (field-list
+    [this]
     "List of keyword EDN-in-Avro fields this object provides."))
+
 
 (defn schema-name
   "EDN-in-Avro schema name of `obj`."
@@ -21,6 +44,7 @@
   (if (meta obj)
     "abracad.avro.edn.Meta"
     (-schema-name obj)))
+
 
 (extend-protocol EDNAvroSerializable
   nil (-schema-name [_] "null")
@@ -123,37 +147,54 @@
   (field-get [this field] (avro/field-get this field))
   (field-list [this] (avro/field-list this)))
 
+
 (defn ^:private edn-list*
   "List-equivalent of `args`."
-  [args] (if (empty? args) () (seq args)))
+  [args]
+  (if (empty? args) () (seq args)))
+
 
 (defn ^:private hash-map*
   "Unsorted map from interleaved key-values in `args`."
-  [args] (apply hash-map args))
+  [args]
+  (apply hash-map args))
+
 
 (defn ^:private sorted-map*
   "Sorted map from interleaved key-values in `args`."
-  [args] (apply sorted-map args))
+  [args]
+  (apply sorted-map args))
+
 
 (defn ^:private hash-set*
   "Unsorted set from values in `args`."
-  [args] (apply hash-set args))
+  [args]
+  (apply hash-set args))
+
 
 (defn ^:private sorted-set*
   "Sorted set from values in `args`."
-  [args] (apply sorted-set args))
+  [args]
+  (apply sorted-set args))
+
 
 (defn ^:private bigdecimal
   "BigDecimal constructor function matching EDN-in-Avro serialization."
-  [^BigInteger value ^long scale] (BigDecimal. value (int scale)))
+  [^BigInteger value ^long scale]
+  (BigDecimal. value (int scale)))
+
 
 (defn ^:private queue*
   "Queue from values in `args`."
-  [args] (into PersistentQueue/EMPTY args))
+  [args]
+  (into PersistentQueue/EMPTY args))
+
 
 (defn ^:private ratio
   "Ratio constructor function matching EDN-in-Avro serialization."
-  [n d] (Ratio. n d))
+  [n d]
+  (Ratio. n d))
+
 
 (def ^:private base-elements
   "Schemas for base EDN element types."
@@ -221,8 +262,8 @@
                      :items "Element"}}]}
    {:type "record", :name "Ratio"
     :fields [{:name "numerator", :type "BigInteger"}
-             {:name "denominator", :type "BigInteger"}]}
-   ])
+             {:name "denominator", :type "BigInteger"}]}])
+
 
 (defn new-schema
   "Return new EDN-in-Avro schema.  If provided, incorporate
@@ -231,10 +272,10 @@ additional allowed element types."
   [& schemas]
   (let [schemas (mapcat (partial coerce IPersistentVector vector) schemas)]
     (avro/parse-schema
-     `{:type "record", :name "abracad.avro.edn.Element",
-       :fields [{:name "value"
-                 :type [{:type "record", :name "Meta"
-                         :fields [{:name "value", :type "Element"}
-                                  {:name "meta", :type "Element"}]}
-                        ~@schemas
-                        ~@base-elements]}]})))
+      `{:type "record", :name "abracad.avro.edn.Element",
+        :fields [{:name "value"
+                  :type [{:type "record", :name "Meta"
+                          :fields [{:name "value", :type "Element"}
+                                   {:name "meta", :type "Element"}]}
+                         ~@schemas
+                         ~@base-elements]}]})))
