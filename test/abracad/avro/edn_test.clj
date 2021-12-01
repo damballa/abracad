@@ -1,5 +1,5 @@
 (ns abracad.avro.edn-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is]]
             [abracad.avro :as avro]
             [abracad.avro.edn :as aedn])
   (:import [clojure.lang PersistentQueue]

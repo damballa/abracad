@@ -3,7 +3,7 @@
   {:private true}
   (:require [abracad.avro :as avro]
             [abracad.avro.util
-             :refer [mangle unmangle field-keyword if-not-let]])
+             :refer [unmangle field-keyword if-not-let]])
   (:import [clojure.lang Var]
            [org.apache.avro Schema Schema$Field]
            [org.apache.avro.io Decoder ResolvingDecoder]
@@ -54,7 +54,7 @@ schema name symbol `rname`."
     (readerf rname record)))
 
 (defn read-enum
-  [^ClojureDatumReader reader ^Schema expected ^Decoder in]
+  [_ ^Schema expected ^Decoder in]
   (-> expected .getEnumSymbols (.get (.readEnum in)) unmangle keyword))
 
 (defn read-array-vector
@@ -105,13 +105,13 @@ schema name symbol `rname`."
              (recur m n))))))))
 
 (defn read-fixed
-  [^ClojureDatumReader reader ^Schema expected ^Decoder in]
+  [_ ^Schema expected ^Decoder in]
   (let [size (.getFixedSize expected), bytes (byte-array size)]
     (.readFixed in bytes 0 size)
     bytes))
 
 (defn read-bytes
-  [^ClojureDatumReader reader ^Schema expected ^Decoder in]
+  [_ _ ^Decoder in]
   (.array (.readBytes in nil)))
 
 ;; Load namespaces in order to ensure Avro reader vars are available

@@ -1,5 +1,5 @@
 (ns abracad.avro.codec-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is testing]]
             [abracad.io :as io]
             [abracad.avro.codec :as codec]))
 

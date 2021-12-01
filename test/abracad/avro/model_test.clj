@@ -1,5 +1,5 @@
 (ns abracad.avro.model-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is]]
             [abracad.avro :as avro])
   (:import [org.apache.avro Schema]
            [abracad.avro ClojureData]))

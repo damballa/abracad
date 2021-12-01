@@ -1,6 +1,7 @@
 (ns abracad.avro-test
   (:require [clojure.test :refer [deftest is testing]]
             [abracad.avro :as avro]
+            [abracad.avro.util]
             [clojure.java.io :as io])
   (:import [java.io FileInputStream]
            [java.net InetAddress]
@@ -178,9 +179,7 @@
                           {:name "right", :type "string"}]}
                 ["Example" "string"])
         records [[0 "foo"] [1 "bar"] [2 "baz"] "quux"]
-        [record] records
-        bytes (apply avro/binary-encoded schema records)
-        thawed (avro/decode-seq schema bytes)]
+        [record] records]
     (is (roundtrips? schema records))
     (is (= ['Example] (map type (roundtrip-binary schema record))))
     (is (= ['Example] (map type (roundtrip-json schema record))))))

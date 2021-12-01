@@ -3,9 +3,8 @@
   {:private true}
   (:require [abracad.avro :as avro]
             [abracad.avro.edn :as edn]
-            [abracad.avro.util :refer [case-expr case-enum mangle unmangle
-                                       field-keyword]])
-  (:import [java.util Collection Map List]
+            [abracad.avro.util :refer [case-expr case-enum mangle field-keyword]])
+  (:import [java.util Collection Map]
            [java.nio ByteBuffer]
            [clojure.lang Named Sequential IRecord Indexed]
            [org.apache.avro Schema Schema$Field Schema$Type AvroTypeException]
@@ -133,7 +132,7 @@ record serialization."
         (write-record* writer schema datum out)))))
 
 (defn write-enum
-  [^ClojureDatumWriter writer ^Schema schema ^Object datum ^Encoder out]
+  [_ ^Schema schema ^Object datum ^Encoder out]
   (.writeEnum out (.getEnumOrdinal schema (-> datum name mangle))))
 
 (defn array-prim?
@@ -220,7 +219,7 @@ record serialization."
   (and (named? datum) (.hasEnumSymbol schema (-> datum name mangle))))
 
 (defn avro-bytes?
-  [^Schema schema datum]
+  [_ datum]
   (or (instance? bytes-class datum)
       (instance? ByteBuffer datum)))
 
@@ -257,15 +256,15 @@ record serialization."
             (recur schemas (inc i))))))))
 
 (defn resolve-union
-  [^ClojureDatumWriter writer ^Schema schema ^Object datum]
+  [_ ^Schema schema ^Object datum]
   (resolve-union* schema datum))
 
 (defn write-bytes
-  [^ClojureDatumWriter writer datum ^Encoder out]
+  [_ datum ^Encoder out]
   (emit-bytes datum out))
 
 (defn write-fixed
-  [^ClojureDatumWriter writer ^Schema schema datum ^Encoder out]
+  [_ ^Schema schema datum ^Encoder out]
   (when (not= (.getFixedSize schema) (count-bytes datum))
     (throw (AvroTypeException. (str "Not a" schema ": " datum))))
   (emit-fixed datum out))

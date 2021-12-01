@@ -34,7 +34,7 @@
               (- result))))))))
 
 (defn compare-enum
-  ^long [x y ^Schema schema equals]
+  ^long [x y ^Schema schema _]
   (- (.getEnumOrdinal schema (name x))
      (.getEnumOrdinal schema (name y))))
 
