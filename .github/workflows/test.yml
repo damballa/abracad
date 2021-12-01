@@ -18,7 +18,7 @@ jobs:
     - name: Cache deps
       uses: actions/cache@v2
       with:
-        path: /home/runner/.m2
+        path: /root/.m2
         key: v1-deps-${{ hashFiles('project.clj') }}
         restore-keys: |
           v1-deps-
