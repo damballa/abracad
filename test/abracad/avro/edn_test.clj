@@ -1,9 +1,14 @@
 (ns abracad.avro.edn-test
-  (:require [clojure.test :refer :all]
-            [abracad.avro :as avro]
-            [abracad.avro.edn :as aedn])
-  (:import [clojure.lang PersistentQueue]
-           [java.net InetAddress]))
+  (:require
+    [abracad.avro :as avro]
+    [abracad.avro.edn :as aedn]
+    [clojure.test :refer [deftest is]])
+  (:import
+    (clojure.lang
+      PersistentQueue)
+    (java.net
+      InetAddress)))
+
 
 ;; Stress-test data from nippy
 ;; - https://github.com/ptaoussanis/nippy
@@ -49,9 +54,10 @@
    :ratio        22/7
 
    ;; Clojure 1.4+ tagged literals [TODO]
-   ;;:tagged-uuid  (java.util.UUID/randomUUID)
-   ;;:tagged-date  (java.util.Date.)
+   ;; :tagged-uuid  (java.util.UUID/randomUUID)
+   ;; :tagged-date  (java.util.Date.)
    })
+
 
 (deftest test-stress
   (let [schema (aedn/new-schema)
@@ -63,12 +69,14 @@
     (is (= (-> stress-data :bytes seq) (-> rted-data :bytes seq)))
     (is (= (-> stress-data :meta meta) (-> rted-data :meta meta)))))
 
+
 (def ip-address-schema
   {:type :record
    :name 'ip.address
    :fields [{:name :address
              :type [{:type :fixed, :name "IPv4", :size 4}
                     {:type :fixed, :name "IPv6", :size 16}]}]})
+
 
 (extend-type InetAddress
   avro/AvroSerializable
@@ -78,8 +86,11 @@
       :address (.getAddress this)))
   (field-list [this] #{:address}))
 
+
 (defn ->InetAddress
-  [address] (InetAddress/getByAddress address))
+  [address]
+  (InetAddress/getByAddress address))
+
 
 (defn run-test-edn-custom
   [schema]
@@ -92,8 +103,10 @@
           thawed (avro/decode-seq schema bytes)]
       (is (= records thawed)))))
 
+
 (deftest test-edn-custom
   (run-test-edn-custom ip-address-schema))
+
 
 (deftest test-edn-custom-parsed
   (run-test-edn-custom (avro/parse-schema ip-address-schema)))

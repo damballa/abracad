@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "Message",
+  "fields": [
+    {
+      "name": "body",
+      "type": "string"
+    },
+    {
+      "name": "author",
+      "type": "Author"
+    }
+  ]
+}

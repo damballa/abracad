@@ -16,5 +16,4 @@
  abracad.avro.edn/SortedSet abracad.avro.edn/sorted-set*,
  abracad.avro.edn/Queue abracad.avro.edn/queue*,
  abracad.avro.edn/Ratio abracad.avro.edn/ratio,
- org.apache.avro.mapreduce/KeyValuePair clojure.core/vector,
- }
+ org.apache.avro.mapreduce/KeyValuePair clojure.core/vector,}

@@ -1,0 +1,14 @@
+{
+  "name": "Author",
+  "type": "record",
+  "fields": [
+    {
+      "name": "username",
+      "type": "string"
+    },
+    {
+      "name": "email",
+      "type": "string"
+    }
+  ]
+}

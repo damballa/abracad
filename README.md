@@ -1,6 +1,5 @@
 # abracad
 
-[![Build Status](https://secure.travis-ci.org/damballa/abracad.png)](http://travis-ci.org/damballa/abracad)
 
 Abracad is a Clojure library for de/serializing Clojure data
 structures with Avro, leveraging the Java Avro implementation.
@@ -10,22 +9,30 @@ arbitrary schemas; customized protocol-based mappings between Avro
 records and any JVM types; and “schema-less” EDN-in-Avro serialization
 of arbitrary Clojure data.
 
+# About this fork
+
+Since the original repo seems to be abandoned, this fork addresses the following issues:
+
+- [x] NPE when deserializing nullable record attributes of type array
+- [x] deserializing map keys as keywords
+- [x] serializing nullable maps
+- [x] New namespaces:
+  - abracad.io - makeing it easy to work with JSON schemas
+  - abracad.avro.codec - simple API for encoding/decoding Avro data to/from binary Base64
+- [ ] logical types (aka support for timestamps, dates etc)
+
 ## Installation
 
 Abracad is available on Clojars.  Add this `:dependency` to your
 Leiningen `project.clj`:
 
 ```clj
-[com.damballa/abracad "0.4.13"]
+[nomnom/abracad "0.5.0"]
 ```
 
 ## Usage
 
-Example usage follows; [detailed API documentation][api] available,
-generated via [codox][codox].
-
-[api]: http://damballa.github.io/abracad/
-[codox]: https://github.com/weavejester/codox
+[See the documentation on CLJDoc](https://cljdoc.org/d/nomnom/abracad/0.5.0/doc/readme)
 
 ### Schemas
 
@@ -85,6 +92,84 @@ Avro field names to `-` in Clojure symbols and vice-versa.  The current
 implementation of this conversion does *not* handle keywords containing `_`
 instead, which is probably a bug.  This mangling may be disabled by binding
 `abracad.avro.util/*mangle-names*` to `false`.
+
+#### Base64'd data
+
+For data interchange over the wire (e.g. service to service communication, AMQP messages etc) you can use
+`abracad.avro.codec` and its built-in support for base64 encoding.
+
+```clojure
+
+(def schema-data
+  {:type "record"
+   :name "Example"
+   :fields [{:type "long"
+             :name "count"}
+            {:type "string"
+             :name "codename"}]})
+
+(deftest full-cycle
+  (let [sample {:count 1
+                :codename "bananas"}
+        encoded (abracad.avro.codec/->avro-base64 schema-data sample)]
+    (is (bytes? encoded))
+    (is (= sample
+           (abracad.avro.codec/avro-base64-> schema-data encoded)))))
+
+```
+
+#### Composite schema support
+
+Schemas can be composed out of multiple schemas and merged into one. When parsing schemas, you have to ensure
+that they're parsed in the correct order: dependency schemas go first:
+
+
+Author schema:
+
+```json
+{
+  "type": "record",
+  "name": "Author",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    }
+  ]
+}
+```
+
+Message schema:
+
+```json
+{
+  "type": "record",
+  "name": "message",
+  "fields": [
+    {
+      "name": "author",
+      "type": "Author"
+    },
+    {
+      "name": "content",
+      "type": "string"
+    }
+  ]
+}
+```
+
+Schema composition:
+
+
+```clojure
+(let [message-schema (abracad.avro.codec/parse-schema*
+                      (abracad.io/read-json-resource "author.avsc")
+                      (abracad.io/read-json-resource "message.avsc"))]
+  (abracad.avro.codec/avro-> message-schema
+                             {:author {:name "Benny"}
+                              :content "18 wheeler"})) ; => bytes
+```
+
 
 #### Record de/serialization tweaking
 
@@ -199,6 +284,7 @@ These are the early days.  Still to be done:
 ## License
 
 Copyright © 2013-2015 Damballa Inc. and contributors.
+Copyright © 2019-  NomNom Inc. and contributors.
 
 Distributed under your choice of the Eclipse Public License or the
 Apache License, Version 2.0.

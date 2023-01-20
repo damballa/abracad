@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "Conversation",
+  "fields": [
+    {
+      "name": "title",
+      "type": "string"
+    },
+    {
+      "name": "lines",
+      "type": {
+        "type": "array",
+        "items": [
+          "null",
+          "Message",
+          "Notice"
+        ]
+      }
+    }
+  ]
+}
